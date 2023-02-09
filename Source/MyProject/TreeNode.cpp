@@ -1,0 +1,191 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "TreeNode.h"
+
+#include "AttractionNode.h"
+#include "Components/SphereComponent.h"
+
+// Sets default values
+ATreeNode::ATreeNode()
+{
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+
+	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
+	SetRootComponent(SceneComponent);
+
+	auto Mesh = ConstructorHelpers::FObjectFinder<UStaticMesh>(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_Sphere.Shape_Sphere'"));
+
+	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
+	StaticMeshComponent->SetStaticMesh(Mesh.Object);
+	StaticMeshComponent->SetRelativeScale3D(FVector(0.2, 0.2, 0.2));
+	StaticMeshComponent->SetupAttachment(RootComponent);
+
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
+	SphereComponent->SetupAttachment(RootComponent);
+
+	KillRange = CreateDefaultSubobject<USphereComponent>(TEXT("KillRange"));
+	KillRange->SetupAttachment(RootComponent);
+
+	currentDirection = FVector::UpVector;
+	nextTreeNodePosition = nullptr;
+	MaxDensity = 25;
+}
+
+void ATreeNode::OnKillOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (Cast<UStaticMeshComponent>(OtherComp))
+	{
+		AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor);
+
+		if (detectedAttractionNode)
+		{
+			detectedAttractionNode->Destroy();
+		}
+	}
+}
+
+void ATreeNode::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (Cast<UStaticMeshComponent>(OtherComp))
+	{
+		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
+		{
+			FVector directionVector = detectedAttractionNode->GetActorLocation() - GetActorLocation();
+			directionVector.Normalize();
+			attractionInfluences.Add(directionVector);
+			CalculateNextTreeNodePosition(false);
+
+		}
+		else if (ATreeNode* detectedTreeNode = Cast<ATreeNode>(OtherActor))
+		{
+			FVector directionVector = detectedTreeNode->GetActorLocation() - GetActorLocation();
+			directionVector.Normalize();
+			detractionInfluences.Add(directionVector);
+		}
+	}
+}
+
+void ATreeNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (Cast<UStaticMeshComponent>(OtherComp))
+	{
+		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
+		{
+			FVector directionVector = detectedAttractionNode->GetActorLocation() - GetActorLocation();
+			directionVector.Normalize();
+			attractionInfluences.RemoveSwap(directionVector, true);
+			CalculateNextTreeNodePosition(false);
+		}
+	}
+}
+
+// Called when the game starts or when spawned
+void ATreeNode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	KillRange->OnComponentBeginOverlap.AddDynamic(this, &ATreeNode::OnKillOverlapBegin);
+	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ATreeNode::OnOverlapBegin);
+	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &ATreeNode::OnOverlapEnd);
+
+}
+
+void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
+{
+	if (detractionInfluences.Num() < MaxDensity)
+	{
+		FVector newSpawnLocation = FVector::Zero();
+		if (!useDirection)
+		{
+			if (attractionInfluences.Num() > 0)
+			{
+				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				FVector averageVector;
+				for (auto vector : attractionInfluences)
+				{
+					averageVector += vector;
+				}
+				averageVector += currentDirection;
+				averageVector /= attractionInfluences.Num() + 1;
+				averageVector.Normalize();
+				FVector badaverageVector;
+				for (auto dvector : detractionInfluences)
+				{
+					badaverageVector -= dvector;
+				}
+				badaverageVector /= detractionInfluences.Num();
+				badaverageVector.Normalize();
+
+				FVector totalVector;
+				totalVector += averageVector + badaverageVector;
+				totalVector.Normalize();
+				newSpawnLocation = GetActorLocation() + totalVector * 20;
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+			}
+		}
+		else
+		{
+			newSpawnLocation = GetActorLocation() + currentDirection * 20;
+		}
+
+		nextTreeNodePosition = new FVector(newSpawnLocation);
+	}
+	
+}
+
+bool ATreeNode::HasAttractionInfluences()
+{
+	if(attractionInfluences.Num()>0)
+	{
+		return true;
+	}
+	return false;
+}
+
+// Called every frame
+void ATreeNode::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (TimeUntilDeath>=0)
+	{
+		TimeUntilDeath -= DeltaTime;
+	}
+}
+
+void ATreeNode::ResetNextTreeNodePosition()
+{
+	delete nextTreeNodePosition;
+	nextTreeNodePosition = nullptr;
+}
+
+bool ATreeNode::GetIsActive()
+{
+	return TimeUntilDeath>0;
+}
+
+void ATreeNode::CalculateCurrentDirection(FVector parentNodeLocation)
+{
+	currentDirection = GetActorLocation() - parentNodeLocation;
+	currentDirection.Normalize();
+	FVector Rotation;
+	Rotation.X = FMath::FRandRange(-10.f, 10.f);
+	Rotation.Y = FMath::FRandRange(-10.f, 10.f);
+	Rotation.Z = FMath::FRandRange(-10.f, 10.f);
+	FRotator rotator = Rotation.Rotation();
+	currentDirection = rotator.RotateVector(currentDirection);
+}
+
+FVector ATreeNode::GetCurrentDirection()
+{
+	return currentDirection;
+}
+
+FVector* ATreeNode::GetNextTreeNodePosition()
+{
+	return nextTreeNodePosition;
+}
+
