@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Actor.h"
 #include "TreeNode.generated.h"
 
@@ -19,14 +20,17 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
 
-	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;
+//	UPROPERTY(EditAnywhere)
+//		UStaticMeshComponent* StaticMeshComponent;
 
 	UPROPERTY(EditAnywhere)
 		USphereComponent* SphereComponent;
 
 	UPROPERTY(EditAnywhere)
 		USphereComponent* KillRange;
+
+	UPROPERTY(VisibleAnywhere)
+		UCapsuleComponent* collider;
 
 	UFUNCTION()
 		void OnKillOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,	bool bFromSweep, const FHitResult& SweepResult);
@@ -59,6 +63,8 @@ public:
 	bool HasAttractionInfluences();
 
 	int numOfChildren = 0;
+
+	ATreeNode* parent=nullptr;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Actor.h"
 #include "AttractionNode.generated.h"
 
@@ -18,8 +19,11 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
 
+//	UPROPERTY(VisibleAnywhere)
+//		UStaticMeshComponent* StaticMeshComponent;
+
 	UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;
+		UCapsuleComponent* collider;
 
 protected:
 	// Called when the game starts or when spawned

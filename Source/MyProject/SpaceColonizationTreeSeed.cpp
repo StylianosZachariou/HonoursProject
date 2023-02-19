@@ -3,12 +3,17 @@
 
 #include "SpaceColonizationTreeSeed.h"
 #include "AttractionNode.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "TreeNode.h"
 
 ASpaceColonizationTreeSeed::ASpaceColonizationTreeSeed()
 {
 	SeedSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	SetRootComponent(SeedSceneComponent);
+
+	MeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("MeshComponent"));
+	MeshComponent->SetupAttachment(RootComponent);
+
 	NumOfAttractionPoints = 2000;
 }
 
@@ -92,6 +97,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 			}
 
 			newTreeNode->CalculateNextTreeNodePosition(GrowingWithDirection);
+			newTreeNode->parent = parentNode;
 			nodes.Add(newTreeNode);
 			parentNode->ResetNextTreeNodePosition();
 			parentNode->numOfChildren++;
@@ -104,6 +110,92 @@ void ASpaceColonizationTreeSeed::SpawnNewNode()
 	ATreeNode* newTreeNode = GetWorld()->SpawnActor<ATreeNode>(TreeNodeToSpawn, GetActorLocation(), FRotator(0, 0, 0));
 	newTreeNode->CalculateNextTreeNodePosition(GrowingWithDirection);
 	nodes.Add(newTreeNode);
+}
+
+void ASpaceColonizationTreeSeed::CreateMesh()
+{
+
+	TArray<FVector> vertices;
+	TArray<int32> triangles;
+	TArray<FVector2D> uvs;
+
+	int radialSubdivisions = 10;
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, radialSubdivisions + 1, true, triangles);
+
+	MeshComponent->ClearAllMeshSections();
+	if (nodes.Num() >= 2)
+	{
+		for (int i = 0; i < nodes.Num(); i++)
+		{
+			if (nodes[i]->parent)
+			{
+				//This Node
+				for (int s = 0; s < radialSubdivisions + 1; s++)
+				{
+					FVector pos = FVector::Zero();
+
+					FTransform rot = FTransform::Identity;
+					rot.SetRotation(nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+
+					FTransform tf = FTransform::Identity;
+					tf.AddToTranslation(nodes[i]->GetTransform().GetTranslation());
+
+					// radial angle of the vertex
+					float alpha = ((float)s / radialSubdivisions) * PI * 2.f;
+					FTransform anotherOne = FTransform::Identity;
+					anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * 4, FMath::Sin(alpha) * 4, 0));
+
+					FTransform total = anotherOne * rot * tf;
+
+					pos = total.TransformPosition(pos);
+					pos -= GetActorLocation();
+
+					vertices.Add(pos);
+
+					FVector2D uv = FVector2D(s, 0);
+					uvs.Add(uv);
+				}
+
+				//Parent
+				for (int s = 0; s < radialSubdivisions + 1; s++)
+				{
+					FVector pos = FVector::Zero();
+
+					FTransform rot = FTransform::Identity;
+					rot.SetRotation(nodes[i]->parent->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+
+					FTransform tf = FTransform::Identity;
+					tf.AddToTranslation(nodes[i]->parent->GetTransform().GetTranslation());
+
+					// radial angle of the vertex
+					float alpha = ((float)s / radialSubdivisions) * PI * 2.f;
+					FTransform anotherOne = FTransform::Identity;
+					anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * 4, FMath::Sin(alpha) * 4, 0));
+
+					FTransform total = anotherOne * rot * tf;
+
+					pos = total.TransformPosition(pos);
+					pos -= GetActorLocation();
+
+					vertices.Add(pos);
+
+					FVector2D uv = FVector2D(s, 0);
+					uvs.Add(uv);
+				}
+
+
+			}
+
+			//Create Section
+			MeshComponent->CreateMeshSection(i, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			vertices.Empty();
+			uvs.Empty();
+		}
+
+		//Material
+		UMaterialInstanceDynamic* dynamicMaterial = UMaterialInstanceDynamic::Create(Material, MeshComponent);
+		MeshComponent->SetMaterial(0, dynamicMaterial);
+	}
 }
 
 // Called every frame
@@ -122,6 +214,7 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 		{
 			QueueNewTreeNodes();
 		}
+		CreateMesh();
 	}
 	else
 	{

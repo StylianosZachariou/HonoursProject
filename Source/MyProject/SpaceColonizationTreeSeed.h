@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "TreeSeed.h"
-
+#include "ProceduralMeshComponent.h"
 #include "SpaceColonizationTreeSeed.generated.h"
 
 class AAttractionNode;
@@ -23,6 +23,12 @@ class MYPROJECT_API ASpaceColonizationTreeSeed : public ATreeSeed
 public:
 	UPROPERTY(Category = "myCategory", VisibleAnywhere, BlueprintReadWrite)
 		USceneComponent* SeedSceneComponent;
+
+	UPROPERTY(Category = "Mesh", VisibleAnywhere)
+		UProceduralMeshComponent* MeshComponent;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		UMaterialInstance* Material;
 
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<ATreeNode> TreeNodeToSpawn;
@@ -50,6 +56,9 @@ private:
 	void CreateNewNodes();
 	void SpawnNewNode(ATreeNode* parentNode);
 	void SpawnNewNode();
+
+	//Mesh Stuff
+	void CreateMesh();
 
 	TArray<ATreeNode*> newNodeQueue;
 
