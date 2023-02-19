@@ -35,47 +35,48 @@ ATreeNode::ATreeNode()
 
 void ATreeNode::OnKillOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (Cast<UStaticMeshComponent>(OtherComp))
-	{
-		AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor);
+	AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor);
 
-		if (detectedAttractionNode)
-		{
-			detectedAttractionNode->Destroy();
-		}
+	if (detectedAttractionNode)
+	{
+		detectedAttractionNode->Destroy();
 	}
+	
 }
 
 void ATreeNode::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (Cast<UStaticMeshComponent>(OtherComp))
-	{
-		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
-		{
-			FVector directionVector = detectedAttractionNode->GetActorLocation() - GetActorLocation();
-			directionVector.Normalize();
-			attractionInfluences.Add(directionVector);
-			CalculateNextTreeNodePosition(false);
 
-		}
-		else if (ATreeNode* detectedTreeNode = Cast<ATreeNode>(OtherActor))
+	if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
+	{
+		if (attractionInfluences.Find(OtherActor) == INDEX_NONE)
 		{
-			FVector directionVector = detectedTreeNode->GetActorLocation() - GetActorLocation();
-			directionVector.Normalize();
-			detractionInfluences.Add(directionVector);
+			attractionInfluences.Add(OtherActor);
+			CalculateNextTreeNodePosition(false);
+		}
+
+	}
+	else if (ATreeNode* detectedTreeNode = Cast<ATreeNode>(OtherActor))
+	{
+		if (detractionInfluences.Find(OtherActor) == INDEX_NONE)
+		{
+			if (detectedTreeNode->GetIsActive())
+			{
+				detractionInfluences.Add(OtherActor);
+				CalculateNextTreeNodePosition(false);
+			}
 		}
 	}
+
 }
 
 void ATreeNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (Cast<UStaticMeshComponent>(OtherComp))
+	if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
 	{
-		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
+		if (attractionInfluences.Find(OtherActor) != INDEX_NONE)
 		{
-			FVector directionVector = detectedAttractionNode->GetActorLocation() - GetActorLocation();
-			directionVector.Normalize();
-			attractionInfluences.RemoveSwap(directionVector, true);
+			attractionInfluences.RemoveSwap(OtherActor);
 			CalculateNextTreeNodePosition(false);
 		}
 	}
@@ -94,46 +95,52 @@ void ATreeNode::BeginPlay()
 
 void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 {
-	if (detractionInfluences.Num() < MaxDensity)
+	if (numOfChildren <= 1)
 	{
-		FVector newSpawnLocation = FVector::Zero();
 		if (!useDirection)
 		{
-			if (attractionInfluences.Num() > 0)
+			if (detractionInfluences.Num() < MaxDensity)
 			{
-				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				FVector averageVector;
-				for (auto vector : attractionInfluences)
-				{
-					averageVector += vector;
-				}
-				averageVector += currentDirection;
-				averageVector /= attractionInfluences.Num() + 1;
-				averageVector.Normalize();
-				FVector badaverageVector;
-				for (auto dvector : detractionInfluences)
-				{
-					badaverageVector -= dvector;
-				}
-				badaverageVector /= detractionInfluences.Num();
-				badaverageVector.Normalize();
 
-				FVector totalVector;
-				totalVector += averageVector + badaverageVector;
-				totalVector.Normalize();
-				newSpawnLocation = GetActorLocation() + totalVector * 20;
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				if (attractionInfluences.Num() > 0)
+				{
+					/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+					FVector averageVector;
+					for (auto vector : attractionInfluences)
+					{
+						FVector directionVector = vector->GetActorLocation() - GetActorLocation();
+						directionVector.Normalize();
+						averageVector += directionVector;
+					}
+					averageVector += currentDirection/2;
+					averageVector.Normalize();
 
+					FVector badaverageVector;
+					for (auto dvector : detractionInfluences)
+					{
+						FVector directionVector = GetActorLocation() - dvector->GetActorLocation();
+						directionVector.Normalize();
+						badaverageVector += directionVector;
+					}
+					badaverageVector.Normalize();
+
+					FVector totalVector;
+					totalVector += averageVector + badaverageVector * detractionInfluences.Num()/5;
+					totalVector.Normalize();
+
+					FVector newSpawnLocation = GetActorLocation() + totalVector * 20;
+					nextTreeNodePosition = new FVector(newSpawnLocation);
+					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				}
 			}
 		}
 		else
 		{
-			newSpawnLocation = GetActorLocation() + currentDirection * 20;
+			FVector newSpawnLocation = GetActorLocation() + currentDirection * 20;
+			nextTreeNodePosition = new FVector(newSpawnLocation);
 		}
 
-		nextTreeNodePosition = new FVector(newSpawnLocation);
 	}
-	
 }
 
 bool ATreeNode::HasAttractionInfluences()

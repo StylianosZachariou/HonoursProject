@@ -57,13 +57,15 @@ public:
 	void CalculateNextTreeNodePosition(bool useDirection);
 
 	bool HasAttractionInfluences();
+
+	int numOfChildren = 0;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 private:
-	TArray<FVector> attractionInfluences;
-	TArray<FVector> detractionInfluences;
+	TArray<AActor*> attractionInfluences;
+	TArray<AActor*> detractionInfluences;
 	FVector currentDirection;
 	FVector* nextTreeNodePosition;
 };

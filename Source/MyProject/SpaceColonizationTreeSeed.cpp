@@ -94,6 +94,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 			newTreeNode->CalculateNextTreeNodePosition(GrowingWithDirection);
 			nodes.Add(newTreeNode);
 			parentNode->ResetNextTreeNodePosition();
+			parentNode->numOfChildren++;
 		}
 	}
 }
@@ -127,7 +128,7 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 		
 		for(int i = 0 ; i < attractionPoints.Num(); i++)
 		{
-			if (attractionPoints[i])
+			if (ensure(attractionPoints[i]))
 			{
 				attractionPoints[i]->Destroy();
 			}
