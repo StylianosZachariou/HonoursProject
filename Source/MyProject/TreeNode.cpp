@@ -95,7 +95,7 @@ void ATreeNode::BeginPlay()
 
 void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 {
-	if (numOfChildren <= 1)
+	if (numOfChildren <= 3)
 	{
 		if (!useDirection)
 		{
@@ -113,8 +113,8 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 						averageVector += directionVector;
 					}
 
-					averageVector += currentDirection;
 					averageVector += FMath::VRand();
+					averageVector += currentDirection;
 					averageVector.Normalize();
 
 					FVector badaverageVector;
@@ -127,10 +127,11 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 					badaverageVector.Normalize();
 
 					FVector totalVector;
-					totalVector += averageVector + badaverageVector * detractionInfluences.Num()/4;
+					totalVector += averageVector + badaverageVector * detractionInfluences.Num();
 					totalVector.Normalize();
 
 					FVector newSpawnLocation = GetActorLocation() + totalVector * 20;
+					
 					nextTreeNodePosition = new FVector(newSpawnLocation);
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				}

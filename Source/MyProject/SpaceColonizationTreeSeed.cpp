@@ -114,12 +114,10 @@ void ASpaceColonizationTreeSeed::SpawnNewNode()
 
 void ASpaceColonizationTreeSeed::CreateMesh()
 {
-
 	TArray<FVector> vertices;
 	TArray<int32> triangles;
 	TArray<FVector2D> uvs;
-
-	int radialSubdivisions = 10;
+	int radialSubdivisions = 20;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, radialSubdivisions + 1, true, triangles);
 
 	MeshComponent->ClearAllMeshSections();
@@ -129,6 +127,8 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 		{
 			if (nodes[i]->parent)
 			{
+				float radius = 3;//pow(pow(nodes.Num(),1/2),i/2);
+
 				//This Node
 				for (int s = 0; s < radialSubdivisions + 1; s++)
 				{
@@ -143,7 +143,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 					// radial angle of the vertex
 					float alpha = ((float)s / radialSubdivisions) * PI * 2.f;
 					FTransform anotherOne = FTransform::Identity;
-					anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * 4, FMath::Sin(alpha) * 4, 0));
+					anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
 
 					FTransform total = anotherOne * rot * tf;
 
@@ -155,7 +155,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 					FVector2D uv = FVector2D(s, 0);
 					uvs.Add(uv);
 				}
-
+				
 				//Parent
 				for (int s = 0; s < radialSubdivisions + 1; s++)
 				{
@@ -170,7 +170,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 					// radial angle of the vertex
 					float alpha = ((float)s / radialSubdivisions) * PI * 2.f;
 					FTransform anotherOne = FTransform::Identity;
-					anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * 4, FMath::Sin(alpha) * 4, 0));
+					anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
 
 					FTransform total = anotherOne * rot * tf;
 
@@ -187,7 +187,40 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 			}
 
 			//Create Section
-			MeshComponent->CreateMeshSection(i, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			
+
+			if(nodes[i]->numOfChildren==0)
+			{
+				FVector pos = FVector::Zero();
+				FTransform tf = FTransform::Identity;
+				tf.AddToTranslation(nodes[i]->GetTransform().GetTranslation());
+				pos = tf.TransformPosition(pos);
+				pos -= GetActorLocation();
+				vertices.Add(pos);
+
+				TArray<int32> circleIndices;
+				for(int s = 0; s < radialSubdivisions + 1; s++)
+				{
+					int index1 = s;
+					int index2 = s + 1;
+					if(index1 >=radialSubdivisions)
+					{
+						index1 -= radialSubdivisions;
+					}
+
+					if (index2 >= radialSubdivisions)
+					{
+						index2 -= radialSubdivisions;
+					}
+					circleIndices.Add(index1);
+					circleIndices.Add(index2);
+					circleIndices.Add(vertices.Num()-1);
+				}
+
+				//Create Section
+				MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, circleIndices, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			}
 			vertices.Empty();
 			uvs.Empty();
 		}
@@ -216,17 +249,17 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 		}
 		CreateMesh();
 	}
-	else
-	{
+//	else
+//	{
 		
-		for(int i = 0 ; i < attractionPoints.Num(); i++)
-		{
-			if (ensure(attractionPoints[i]))
-			{
-				attractionPoints[i]->Destroy();
-			}
-		}
-		attractionPoints.Empty();
-	}
+	//	for(int i = 0 ; i < attractionPoints.Num(); i++)
+	//	{
+	//		if (ensure(attractionPoints[i]))
+	//		{
+	//			attractionPoints[i]->Destroy();
+	//		}
+	//	}
+	//	attractionPoints.Empty();/
+//	}
 }
 
