@@ -65,6 +65,8 @@ public:
 	int numOfChildren = 0;
 
 	ATreeNode* parent=nullptr;
+
+	void IncrementChildCount();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

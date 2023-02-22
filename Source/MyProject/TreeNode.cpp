@@ -82,6 +82,15 @@ void ATreeNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* O
 	}
 }
 
+void ATreeNode::IncrementChildCount()
+{
+	numOfChildren++;
+	if(parent)
+	{
+		parent->IncrementChildCount();
+	}
+}
+
 // Called when the game starts or when spawned
 void ATreeNode::BeginPlay()
 {

@@ -100,7 +100,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 			newTreeNode->parent = parentNode;
 			nodes.Add(newTreeNode);
 			parentNode->ResetNextTreeNodePosition();
-			parentNode->numOfChildren++;
+			parentNode->IncrementChildCount();
 		}
 	}
 }
@@ -120,6 +120,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 	int radialSubdivisions = 20;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, radialSubdivisions + 1, true, triangles);
 
+	float growthRate= 1;
 	MeshComponent->ClearAllMeshSections();
 	if (nodes.Num() >= 2)
 	{
@@ -127,7 +128,8 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 		{
 			if (nodes[i]->parent)
 			{
-				float radius = 3;//pow(pow(nodes.Num(),1/2),i/2);
+
+				float radius = FMath::Max(growthRate * FMath::Log2(nodes[i]->numOfChildren),1);
 
 				//This Node
 				for (int s = 0; s < radialSubdivisions + 1; s++)
@@ -155,7 +157,8 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 					FVector2D uv = FVector2D(s, 0);
 					uvs.Add(uv);
 				}
-				
+
+				radius = FMath::Max(growthRate * FMath::Log2(nodes[i]->parent->numOfChildren), 1);
 				//Parent
 				for (int s = 0; s < radialSubdivisions + 1; s++)
 				{
@@ -178,7 +181,6 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 					pos -= GetActorLocation();
 
 					vertices.Add(pos);
-
 					FVector2D uv = FVector2D(s, 0);
 					uvs.Add(uv);
 				}
@@ -189,7 +191,6 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 			//Create Section
 			MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 			
-
 			if(nodes[i]->numOfChildren==0)
 			{
 				FVector pos = FVector::Zero();
