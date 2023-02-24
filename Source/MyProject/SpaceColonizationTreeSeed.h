@@ -39,6 +39,9 @@ public:
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		int NumOfAttractionPoints;
 
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		float MeshGrowthRate=3.52;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

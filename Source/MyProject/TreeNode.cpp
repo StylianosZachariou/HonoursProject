@@ -104,7 +104,7 @@ void ATreeNode::BeginPlay()
 
 void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 {
-	if (numOfChildren <= 3)
+	if (numOfChildren <= 2)
 	{
 		if (!useDirection)
 		{
@@ -122,7 +122,7 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 						averageVector += directionVector;
 					}
 
-					averageVector += FMath::VRand();
+					averageVector += FMath::VRand()/5;
 					averageVector += currentDirection;
 					averageVector.Normalize();
 
@@ -189,6 +189,7 @@ bool ATreeNode::GetIsActive()
 void ATreeNode::CalculateCurrentDirection(FVector parentNodeLocation)
 {
 	currentDirection = GetActorLocation() - parentNodeLocation;
+	currentDirection += FMath::VRand().GetAbs() / 5;
 	currentDirection.Normalize();
 //	FVector Rotation;
 //	Rotation.X = FMath::FRandRange(-10.f, 10.f);

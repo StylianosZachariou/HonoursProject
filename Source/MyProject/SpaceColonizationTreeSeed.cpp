@@ -119,8 +119,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 	TArray<FVector2D> uvs;
 	int radialSubdivisions = 20;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, radialSubdivisions + 1, true, triangles);
-
-	float growthRate= 1;
+	
 	MeshComponent->ClearAllMeshSections();
 	if (nodes.Num() >= 2)
 	{
@@ -128,8 +127,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 		{
 			if (nodes[i]->parent)
 			{
-
-				float radius = FMath::Max(growthRate * FMath::Log2(nodes[i]->numOfChildren),1);
+				float radius = pow(nodes[i]->numOfChildren*MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 
 				//This Node
 				for (int s = 0; s < radialSubdivisions + 1; s++)
@@ -138,6 +136,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 
 					FTransform rot = FTransform::Identity;
 					rot.SetRotation(nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+
 
 					FTransform tf = FTransform::Identity;
 					tf.AddToTranslation(nodes[i]->GetTransform().GetTranslation());
@@ -158,14 +157,14 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 					uvs.Add(uv);
 				}
 
-				radius = FMath::Max(growthRate * FMath::Log2(nodes[i]->parent->numOfChildren), 1);
+				radius =  pow(nodes[i]->parent->numOfChildren * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 				//Parent
 				for (int s = 0; s < radialSubdivisions + 1; s++)
 				{
 					FVector pos = FVector::Zero();
 
 					FTransform rot = FTransform::Identity;
-					rot.SetRotation(nodes[i]->parent->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+					rot.SetRotation(nodes[i]->parent->GetCurrentDirection().ToOrientationRotator().Add(90,0,0).Quaternion());
 
 					FTransform tf = FTransform::Identity;
 					tf.AddToTranslation(nodes[i]->parent->GetTransform().GetTranslation());
