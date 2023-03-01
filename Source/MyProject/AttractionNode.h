@@ -19,8 +19,8 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
 
-//	UPROPERTY(VisibleAnywhere)
-//		UStaticMeshComponent* StaticMeshComponent;
+	UPROPERTY(VisibleAnywhere)
+		UStaticMeshComponent* StaticMeshComponent;
 
 	UPROPERTY(VisibleAnywhere)
 		UCapsuleComponent* collider;

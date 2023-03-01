@@ -3,6 +3,7 @@
 
 #include "SpaceColonizationTreeSeed.h"
 #include "AttractionNode.h"
+#include "EnvironmentSettings.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "TreeNode.h"
 
@@ -24,12 +25,30 @@ void ASpaceColonizationTreeSeed::BeginPlay()
 
 	CreateAttractionPoints();
 	SpawnNewNode();
+
+	//Moisture
+
+	//Soil Acidity
+
+	//Temperature
 }
 
+//ENVIRONMENT
 void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 {
 	int newAttractionPoints = 0;
-	int radius = 1000;
+	int radius = 500;
+
+	AEnvironmentSettings* environment = Cast<AEnvironmentSettings>(GetWorldSettings());
+
+	//Calculate Wind Offset
+
+	FVector offset = FVector::Zero();
+
+
+	//Calculate Light
+
+
 	while (newAttractionPoints< NumOfAttractionPoints)
 	{
 		float x = FMath::FRandRange(-radius,radius);
@@ -39,7 +58,7 @@ void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 		{
 			if (z >= 0)
 			{
-				FVector attractionPointPosition = FVector(x + GetActorLocation().X, y + GetActorLocation().Y, z + GetActorLocation().Z + 250);
+				FVector attractionPointPosition = FVector(x + GetActorLocation().X, y + GetActorLocation().Y, z + GetActorLocation().Z + 150);
 				SpawnNewAttractionNode(attractionPointPosition);
 				newAttractionPoints++;
 			}
