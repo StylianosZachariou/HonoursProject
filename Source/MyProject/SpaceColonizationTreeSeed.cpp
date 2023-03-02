@@ -23,8 +23,32 @@ void ASpaceColonizationTreeSeed::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ApplyEnvironment();
 	CreateAttractionPoints();
 	SpawnNewNode();
+}
+
+void ASpaceColonizationTreeSeed::ApplyEnvironment()
+{
+	//Just for testing
+	crownRadius = 500;
+	trunkheight = 150;
+
+	AEnvironmentSettings* environment = Cast<AEnvironmentSettings>(GetWorldSettings());
+
+	float maxWindPower = 75;
+	//Wind
+	//If the wind is strong
+	if(environment->GetWindPower()>25)
+	{
+		float windPower = FMath::Min(environment->GetWindPower(), maxWindPower);
+
+		FVector direction = environment->GetWindDirection();
+		direction.Normalize();
+		windOffset = direction * ((windPower * crownRadius) / maxWindPower);
+	}
+
+	//Light
 
 	//Moisture
 
@@ -37,28 +61,21 @@ void ASpaceColonizationTreeSeed::BeginPlay()
 void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 {
 	int newAttractionPoints = 0;
-	int radius = 500;
-
-	AEnvironmentSettings* environment = Cast<AEnvironmentSettings>(GetWorldSettings());
-
-	//Calculate Wind Offset
-
-	FVector offset = FVector::Zero();
-
-
-	//Calculate Light
-
 
 	while (newAttractionPoints< NumOfAttractionPoints)
 	{
-		float x = FMath::FRandRange(-radius,radius);
-		float y = FMath::FRandRange(-radius, radius);
-		float z = FMath::FRandRange(-radius, radius);
-		if (sqrt((x * x) + (y * y) + (z * z)) <= radius)
+		FVector pos;
+		pos.X = FMath::FRandRange(-crownRadius, crownRadius);
+		pos.Y = FMath::FRandRange(-crownRadius, crownRadius);
+		pos.Z = FMath::FRandRange(-crownRadius, crownRadius);
+
+		if (sqrt((pos.X * pos.X) + (pos.Y * pos.Y) + (pos.Z * pos.Z)) <= crownRadius)
 		{
-			if (z >= 0)
+			if (pos.Z >= 0)
 			{
-				FVector attractionPointPosition = FVector(x + GetActorLocation().X, y + GetActorLocation().Y, z + GetActorLocation().Z + 150);
+				FVector attractionPointPosition = pos + GetActorLocation();
+				attractionPointPosition.Z += trunkheight;
+				attractionPointPosition+=windOffset;
 				SpawnNewAttractionNode(attractionPointPosition);
 				newAttractionPoints++;
 			}

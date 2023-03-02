@@ -50,6 +50,8 @@ private:
 	TArray<AAttractionNode*> attractionPoints;
 	TArray<ATreeNode*> nodes;
 
+	void ApplyEnvironment();
+
 	//Create Attraction Points
 	void CreateAttractionPoints();
 	void SpawnNewAttractionNode(FVector location);
@@ -66,4 +68,11 @@ private:
 	TArray<ATreeNode*> newNodeQueue;
 
 	bool GrowingWithDirection = true;
+
+	FVector windOffset = FVector::Zero();
+	FRotator lightRotation = FRotator::ZeroRotator;
+	float crownRadius;
+	float branchSize;
+	float trunkheight;
+
 };
