@@ -42,6 +42,18 @@ public:
 	UPROPERTY(Category = "Mesh", EditAnywhere)
 		float MeshGrowthRate=3.52;
 
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		float levelOfDetail = 15;
+
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		float MaximumAngleOfLightRotation = 15;
+
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		bool useLight;
+
+	UPROPERTY(Category = "Branch", EditAnywhere)
+		float BranchLength = 20;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -61,18 +73,19 @@ private:
 	void CreateNewNodes();
 	void SpawnNewNode(ATreeNode* parentNode);
 	void SpawnNewNode();
+	void GrowBranches(float DeltaTime);
 
 	//Mesh Stuff
 	void CreateMesh();
 
 	TArray<ATreeNode*> newNodeQueue;
+	TArray<ATreeNode*> growingNodeQueue;
 
 	bool GrowingWithDirection = true;
 
 	FVector windOffset = FVector::Zero();
 	FRotator lightRotation = FRotator::ZeroRotator;
 	float crownRadius;
-	float branchSize;
 	float trunkheight;
 
 };

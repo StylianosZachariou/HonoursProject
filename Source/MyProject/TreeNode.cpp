@@ -53,18 +53,20 @@ void ATreeNode::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor*
 		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
 		{
 			attractionInfluences.Add(OtherActor);
-			CalculateNextTreeNodePosition(false);
+			if (nodebranchLength > 0)
+			{
+				CalculateNextTreeNodePosition(false, nodebranchLength);
+			}
 
 
 		}
 		else if (ATreeNode* detectedTreeNode = Cast<ATreeNode>(OtherActor))
 		{
-			if (detectedTreeNode->GetIsActive())
+			detractionInfluences.Add(OtherActor);
+			if (nodebranchLength > 0)
 			{
-				detractionInfluences.Add(OtherActor);
-				CalculateNextTreeNodePosition(false);
+				CalculateNextTreeNodePosition(false, nodebranchLength);
 			}
-
 		}
 	}
 }
@@ -76,8 +78,10 @@ void ATreeNode::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* O
 		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
 		{
 			attractionInfluences.RemoveSwap(OtherActor);
-			CalculateNextTreeNodePosition(false);
-
+			if (nodebranchLength > 0)
+			{
+				CalculateNextTreeNodePosition(false, nodebranchLength);
+			}
 		}
 	}
 }
@@ -102,7 +106,7 @@ void ATreeNode::BeginPlay()
 
 }
 
-void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
+void ATreeNode::CalculateNextTreeNodePosition(bool useDirection, float branchLength)
 {
 	if (numOfChildren <= 2)
 	{
@@ -122,8 +126,8 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 						averageVector += directionVector;
 					}
 
-					averageVector += FMath::VRand()/5;
-					averageVector += currentDirection;
+					averageVector += FMath::VRand();
+					averageVector += currentDirection/5;
 					averageVector.Normalize();
 
 					FVector badaverageVector;
@@ -139,7 +143,7 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 					totalVector += averageVector + badaverageVector * detractionInfluences.Num();
 					totalVector.Normalize();
 
-					FVector newSpawnLocation = GetActorLocation() + totalVector * 20;
+					FVector newSpawnLocation = GetActorLocation() + totalVector * branchLength;
 					
 					nextTreeNodePosition = new FVector(newSpawnLocation);
 					//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,11 +152,12 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection)
 		}
 		else
 		{
-			FVector newSpawnLocation = GetActorLocation() + currentDirection * 20;
+			FVector newSpawnLocation = GetActorLocation() + currentDirection * branchLength;
 			nextTreeNodePosition = new FVector(newSpawnLocation);
 		}
 
 	}
+	nodebranchLength = branchLength;
 }
 
 bool ATreeNode::HasAttractionInfluences()
@@ -189,14 +194,11 @@ bool ATreeNode::GetIsActive()
 void ATreeNode::CalculateCurrentDirection(FVector parentNodeLocation)
 {
 	currentDirection = GetActorLocation() - parentNodeLocation;
-	currentDirection += FMath::VRand().GetAbs() / 5;
+	FVector randomVector = FMath::VRand();
+	randomVector.Z = FMath::Abs(randomVector.Z);
+	currentDirection += randomVector / 2;
 	currentDirection.Normalize();
-//	FVector Rotation;
-//	Rotation.X = FMath::FRandRange(-10.f, 10.f);
-//	Rotation.Y = FMath::FRandRange(-10.f, 10.f);
-//	Rotation.Z = FMath::FRandRange(-10.f, 10.f);
-///	FRotator rotator = Rotation.Rotation();
-//	currentDirection = rotator.RotateVector(currentDirection);
+
 }
 
 FVector ATreeNode::GetCurrentDirection()

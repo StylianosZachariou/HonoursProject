@@ -58,7 +58,7 @@ public:
 	void CalculateCurrentDirection(FVector parentNodeLocation);
 	FVector GetCurrentDirection();
 
-	void CalculateNextTreeNodePosition(bool useDirection);
+	void CalculateNextTreeNodePosition(bool useDirection, float branchLength);
 
 	bool HasAttractionInfluences();
 
@@ -67,6 +67,9 @@ public:
 	ATreeNode* parent=nullptr;
 
 	void IncrementChildCount();
+
+	float growingTimer = 0;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -76,4 +79,5 @@ private:
 	TArray<AActor*> detractionInfluences;
 	FVector currentDirection;
 	FVector* nextTreeNodePosition;
+	float nodebranchLength;
 };
