@@ -5,7 +5,6 @@
 #include "AttractionNode.h"
 #include "EnvironmentSettings.h"
 #include "KismetProceduralMeshLibrary.h"
-#include "ParameterCollection.h"
 #include "TreeNode.h"
 
 ASpaceColonizationTreeSeed::ASpaceColonizationTreeSeed()
@@ -17,7 +16,6 @@ ASpaceColonizationTreeSeed::ASpaceColonizationTreeSeed()
 	MeshComponent->SetupAttachment(RootComponent);
 
 	NumOfAttractionPoints = 2000;
-	MeshComponent->bUseAsyncCooking = true;
 }
 
 // Called when the game starts or when spawned
@@ -101,12 +99,11 @@ void ASpaceColonizationTreeSeed::ApplyEnvironment()
 	RateOfGrowth = FMath::Max(0, RateOfGrowth);
 }
 
-//ENVIRONMENT
 void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 {
 	int newAttractionPoints = 0;
 
-	while (newAttractionPoints< NumOfAttractionPoints)
+	while (attractionPoints.Num() < NumOfAttractionPoints)
 	{
 		FVector pos;
 		pos.X = FMath::FRandRange(-crownRadius, crownRadius);
@@ -134,7 +131,7 @@ void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 				attractionPointPosition = translation.TransformPosition(attractionPointPosition);
 				
 				SpawnNewAttractionNode(attractionPointPosition);
-				newAttractionPoints++;
+				
 			}
 		}
 	}
@@ -195,6 +192,32 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 			parentNode->ResetNextTreeNodePosition();
 			parentNode->IncrementChildCount();
 		}
+	}
+}
+
+void ASpaceColonizationTreeSeed::SpawnNewNode()
+{
+	ATreeNode* newTreeNode = GetWorld()->SpawnActor<ATreeNode>(TreeNodeToSpawn, GetActorLocation(), FRotator(0, 0, 0));
+
+	if (newTreeNode)
+	{
+
+		if (GrowingWithDirection)
+		{
+			newTreeNode->CalculateCurrentDirection(GetActorLocation() + FVector::DownVector);
+			if (newTreeNode->HasAttractionInfluences())
+			{
+				GrowingWithDirection = false;
+			}
+		}
+		else
+		{
+			newTreeNode->CalculateCurrentDirection(GetActorLocation());
+		}
+
+		newTreeNode->CalculateNextTreeNodePosition(GrowingWithDirection, BranchLength);
+		newTreeNode->parent = nullptr;
+		growingNodeQueue.Add(newTreeNode);
 	}
 }
 
@@ -425,7 +448,7 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	TimeOfGrowth -= DeltaTime;
 	if (TimeOfGrowth >= 0)
 	{
