@@ -51,6 +51,12 @@ public:
 	UPROPERTY(Category = "Mesh", EditAnywhere)
 		float levelOfDetail = 15;
 
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		bool useLight = false;
+
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		float MaximumAngleOfLightRotation = 15;
+
 
 protected:
 	// Called when the game starts or when spawned
@@ -58,6 +64,7 @@ protected:
 
 private:
 
+	void ApplyEnvironment();
 	void GrowBranches(float DeltaTime);
 	void ResetAStar();
 	bool StepAStarAlgorithm();
@@ -83,5 +90,6 @@ private:
 	float crownRadius=0;
 	float trunkHeight=0;
 	FVector windOffset=FVector::Zero();
+	FRotator lightRotation = FRotator::ZeroRotator;
 	bool trunkBuild = false;
 };

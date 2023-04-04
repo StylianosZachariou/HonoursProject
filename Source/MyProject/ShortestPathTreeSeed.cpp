@@ -2,6 +2,8 @@
 
 
 #include "ShortestPathTreeSeed.h"
+
+#include "EnvironmentSettings.h"
 #include "KismetProceduralMeshLibrary.h"
 
 
@@ -41,9 +43,7 @@ void AShortestPathTreeSeed::BeginPlay()
 {
 	Super::BeginPlay();
 
-	crownRadius = 500;
-	trunkHeight = 150;
-
+	ApplyEnvironment();
 	//First Guiding Node
 	FVector centrePosition = FVector(0, 0, 0);
 
@@ -54,7 +54,7 @@ void AShortestPathTreeSeed::BeginPlay()
 	centreGuidingVectorPosition = translations.TransformPosition(centreGuidingVectorPosition);
 
 	FTransform translations1 = FTransform::Identity;
-	translations1.AddToTranslation(GetActorLocation() + windOffset);
+	translations1.AddToTranslation(GetActorLocation());
 	translations1.AddToTranslation(FVector(0, 0, trunkHeight));
 	centreGuidingVectorPosition = translations1.TransformPosition(centreGuidingVectorPosition);
 	SpawnGuidingVector(centreGuidingVectorPosition);
@@ -288,6 +288,7 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 
 				if (finalTreeNodeActors.Find(trunk->nodes[i]) == INDEX_NONE)
 				{
+					trunk->nodes[i]->IncrementChildrenCount();
 					finalTreeNodeActors.Add(trunk->nodes[i]);
 					trunkNodesGenerated++;
 				}
@@ -336,6 +337,76 @@ void AShortestPathTreeSeed::CreateSphereMesh(AGuidingVectorNode* node, float rad
 	vertices.Empty();
 	uvs.Empty();
 	triangles.Empty();
+}
+
+void AShortestPathTreeSeed::ApplyEnvironment()
+{
+	crownRadius = 500;
+	trunkHeight = 150;
+
+	AEnvironmentSettings* environment = Cast<AEnvironmentSettings>(GetWorldSettings());
+
+	float maxWindPower = 75;
+	float windPower = FMath::Min(environment->GetWindPower(), maxWindPower);
+	//Wind
+	//If the wind is strong
+	if (windPower > 25)
+	{
+		FVector direction = environment->GetWindDirection();
+		direction.Normalize();
+		windOffset = direction * ((windPower * crownRadius) / maxWindPower);
+	}
+
+	FVector crownStartPosition = GetActorLocation();
+	crownStartPosition.Z += trunkHeight;
+
+	//Light
+	if (useLight)
+	{
+		FVector lightGrowthDirection = environment->GetLightPosition() - crownStartPosition;
+		lightGrowthDirection.Normalize();
+
+		lightRotation = lightGrowthDirection.ToOrientationRotator().Add(-90, 0, 0);
+		lightRotation.Pitch = FMath::Min(lightRotation.Pitch, MaximumAngleOfLightRotation);
+		lightRotation.Pitch = FMath::Max(lightRotation.Pitch, -MaximumAngleOfLightRotation);
+	}
+
+
+	//Moisture
+	RateOfGrowth = 1;
+	float moisturePercentage = environment->GetMoisture();
+	if (moisturePercentage > 45)
+	{
+		RateOfGrowth -= FMath::Abs(45 - moisturePercentage) / 25;
+	}
+	else if (moisturePercentage < 20)
+	{
+		RateOfGrowth -= FMath::Abs(20 - moisturePercentage) / 10;
+	}
+
+	//Soil Acidity
+	float soilPH = environment->GetSoilAcidity();
+	if (soilPH > 8)
+	{
+		RateOfGrowth -= FMath::Abs(8 - soilPH) / 3;
+	}
+	else if (soilPH < 4.5)
+	{
+		RateOfGrowth -= FMath::Abs(4.5 - soilPH) / 2;
+	}
+
+	//Temperature
+	float temperatureCelcius = environment->GetTemperature();
+	if (temperatureCelcius > 30)
+	{
+		RateOfGrowth -= FMath::Abs(30 - temperatureCelcius) / 11;
+	}
+	else if (temperatureCelcius < 25)
+	{
+		RateOfGrowth -= FMath::Abs(25 - temperatureCelcius) / 21;
+	}
+
+	RateOfGrowth = FMath::Max(0, RateOfGrowth);
 }
 
 void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
@@ -432,6 +503,7 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 
 				if (finalTreeNodeActors.Find(growingTreeNodes[i]->nodes[j]) == INDEX_NONE)
 				{
+					growingTreeNodes[i]->nodes[j]->IncrementChildrenCount();
 					finalTreeNodeActors.Add(growingTreeNodes[i]->nodes[j]);
 				}
 
@@ -527,14 +599,6 @@ bool AShortestPathTreeSeed::StepAStarAlgorithm()
 					}
 				}
 
-				for(int i = newBranch->nodes.Num()-1; i>=0; i--)
-				{
-					if(newBranch->nodes[i]->GetPrevious())
-					{
-						newBranch->nodes[i]->IncrementChildrenCount();
-					}
-				}
-
 				if(trunk)
 				{
 					growingTreeNodes.Add(newBranch);
@@ -587,7 +651,13 @@ void AShortestPathTreeSeed::SpawnAllGuidingVectors()
 				FTransform translation2 = FTransform::Identity;
 				translation2.AddToTranslation(FVector(pos));
 				guidingVectorPosition = translation2.TransformPosition(guidingVectorPosition);
-				
+
+
+				FTransform rot = FTransform::Identity;
+				rot.SetRotation(lightRotation.Quaternion());
+
+				guidingVectorPosition = rot.TransformPosition(guidingVectorPosition);
+
 				FTransform translation = FTransform::Identity;
 				translation.AddToTranslation(GetActorLocation() + windOffset);
 				translation.AddToTranslation(FVector(0, 0, trunkHeight));

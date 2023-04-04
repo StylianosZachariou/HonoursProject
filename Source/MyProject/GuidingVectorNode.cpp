@@ -36,10 +36,10 @@ void AGuidingVectorNode::SetParent(FVector location)
 	if (!hasParent)
 	{
 		//Rotate This Node
-//		StaticMeshComponent->SetStaticMesh(coneMesh);
+		//StaticMeshComponent->SetStaticMesh(coneMesh);
 		directionVector = location- GetActorLocation();
 		directionVector.Normalize();
-//		StaticMeshComponent->SetRelativeRotationExact(directionVector.ToOrientationRotator().Add(270,0,0));
+		//StaticMeshComponent->SetRelativeRotationExact(directionVector.ToOrientationRotator().Add(270,0,0));
 		hasParent = true;
 	}
 }
