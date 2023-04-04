@@ -35,13 +35,6 @@ void AShortestPathTreeSeed::Tick(float DeltaTime)
 		GrowTrunk(DeltaTime);
 	}
 	CreateMesh();
-//	else
-//	{
-//		if(MeshComponent->GetNumSections()==0)
-//		{
-//			CreateMesh();
-//		}
-//	}
 }
 
 void AShortestPathTreeSeed::BeginPlay()
@@ -90,7 +83,7 @@ void AShortestPathTreeSeed::SpawnGuidingVector(FVector location)
 
 void AShortestPathTreeSeed::ChooseEndpoints()
 {
-	for(int i =0; i < 20; i++)
+	for(int i =0; i < NumberOfEndpoints; i++)
 	{
 		int randIndex = FMath::RandRange(1, guidingVectorNodes.Num() - 1);
 		guidingVectorNodes[randIndex]->SetEndpoint();
@@ -121,13 +114,11 @@ void AShortestPathTreeSeed::CreateMesh()
 		TArray<FVector2D> uvs;
 		TArray<int32> triangles;
 		UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
-		float radius = 10;
+		float radius;
 		if (finalTreeNodeActors[i]->GetNext())
 		{
-			//pow(nodes[i]->numOfChildren * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-		//	radius = pow(nodes[i]->parent->numOfChildren * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
+			radius = pow(finalTreeNodeActors[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+			
 			//Parent
 			for (int s = 0; s < levelOfDetail + 1; s++)
 			{
@@ -156,6 +147,7 @@ void AShortestPathTreeSeed::CreateMesh()
 				uvs.Add(uv);
 			}
 
+			radius = pow(finalTreeNodeActors[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 			//This Node
 			for (int s = 0; s < levelOfDetail + 1; s++)
 			{
@@ -194,8 +186,12 @@ void AShortestPathTreeSeed::CreateMesh()
 			uvs.Empty();
 			triangles.Empty();
 
+			
 		}
+
+		radius = pow(finalTreeNodeActors[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 		CreateSphereMesh(finalTreeNodeActors[i], radius);
+		
 	}
 }
 
@@ -205,19 +201,21 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 	TArray<FVector2D> uvs;
 	TArray<int32> triangles;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
-	float radius = 10;
-	if (!growingTreeNodes.IsEmpty())
+	if (trunk)
 	{
-		for (int i = growingTreeNodes[0].nodes.Num() - 1; i > 0; i--)
+		for (int i = trunk->nodes.Num()-1; i >=0; i--)
 		{
-			if (growingTreeNodes[0].nodes[i]->GetNext())
+			if (trunk->nodes[i]->GetNext())
 			{
-				float BranchLength = FVector::Dist(growingTreeNodes[0].nodes[i]->GetActorLocation(), growingTreeNodes[0].nodes[i]->GetNext()->GetActorLocation());
-				growingTreeNodes[0].nodes[i]->AddToGrowingTimer(DeltaTime);
-				float currentProgress = BranchLength * growingTreeNodes[0].nodes[i]->GetGrowingTimer() / (1 / RateOfGrowth);
+				float BranchLength = FVector::Dist(trunk->nodes[i]->GetActorLocation(), trunk->nodes[i]->GetNext()->GetActorLocation());
+				trunk->nodes[i]->AddToGrowingTimer(DeltaTime);
+				float currentProgress = BranchLength * trunk->nodes[i]->GetGrowingTimer() / (1 / RateOfGrowth);
 
+				float radius;
 				if (currentProgress < BranchLength)
 				{
+					radius = pow(trunk->nodes[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
 					//Parent
 					for (int s = 0; s < levelOfDetail + 1; s++)
 					{
@@ -225,10 +223,11 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 
 						FTransform rot = FTransform::Identity;
 
-						rot.SetRotation(growingTreeNodes[0].nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+						rot.SetRotation(trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+
 
 						FTransform tf = FTransform::Identity;
-						tf.AddToTranslation(growingTreeNodes[0].nodes[i]->GetNext()->GetTransform().GetTranslation());
+						tf.AddToTranslation(trunk->nodes[i]->GetNext()->GetTransform().GetTranslation());
 
 						// radial angle of the vertex
 						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
@@ -245,20 +244,22 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 						uvs.Add(uv);
 					}
 
+					radius = pow(trunk->nodes[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
 					//This Node
 					for (int s = 0; s < levelOfDetail + 1; s++)
 					{
 						FVector pos = FVector::Zero();
 
 						FTransform rot = FTransform::Identity;
-						rot.SetRotation(growingTreeNodes[0].nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+						rot.SetRotation(trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
 
 						FTransform tf = FTransform::Identity;
-						FVector translation = (growingTreeNodes[0].nodes[i]->GetTransform().GetTranslation() - growingTreeNodes[0].nodes[i]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
-						tf.AddToTranslation(growingTreeNodes[0].nodes[i]->GetTransform().GetTranslation() - translation);
+						FVector translation = (trunk->nodes[i]->GetTransform().GetTranslation() - trunk->nodes[i]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
+						tf.AddToTranslation(trunk->nodes[i]->GetTransform().GetTranslation() - translation);
 
 						// radial angle of the vertex
-						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
+						float alpha = (float)s / levelOfDetail * PI * 2.f;
 						FTransform anotherOne = FTransform::Identity;
 						anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
 
@@ -285,18 +286,17 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 					break;
 				}
 
-				if (finalTreeNodeActors.Find(growingTreeNodes[0].nodes[i]) == INDEX_NONE)
+				if (finalTreeNodeActors.Find(trunk->nodes[i]) == INDEX_NONE)
 				{
-					finalTreeNodeActors.Add(growingTreeNodes[0].nodes[i]);
-				}
-				growingTreeNodes[0].nodes.RemoveAt(i);
-
-				if (growingTreeNodes[0].nodes.IsEmpty())
-				{
-					growingTreeNodes.RemoveAtSwap(0);
-					trunkBuild = true;
+					finalTreeNodeActors.Add(trunk->nodes[i]);
+					trunkNodesGenerated++;
 				}
 			}
+		}
+
+		if (trunkNodesGenerated >= trunk->nodes.Num()-1)
+		{
+			trunkBuild = true;
 		}
 	}
 }
@@ -346,17 +346,19 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 		TArray<FVector2D> uvs;
 		TArray<int32> triangles;
 		UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
-		float radius = 10;
-		for (int j = 0; j < growingTreeNodes[i].nodes.Num(); j++)
+		for (int j = 0; j < growingTreeNodes[i]->nodes.Num(); j++)
 		{
-			if (growingTreeNodes[i].nodes[j]->GetNext())
+			if (growingTreeNodes[i]->nodes[j]->GetNext())
 			{
-				float BranchLength = FVector::Dist(growingTreeNodes[i].nodes[j]->GetActorLocation(), growingTreeNodes[i].nodes[j]->GetNext()->GetActorLocation());
-				growingTreeNodes[i].nodes[j]->AddToGrowingTimer(DeltaTime);
-				float currentProgress = BranchLength * growingTreeNodes[i].nodes[j]->GetGrowingTimer() / (1 / RateOfGrowth);
+				float BranchLength = FVector::Dist(growingTreeNodes[i]->nodes[j]->GetActorLocation(), growingTreeNodes[i]->nodes[j]->GetNext()->GetActorLocation());
+				growingTreeNodes[i]->nodes[j]->AddToGrowingTimer(DeltaTime);
+				float currentProgress = BranchLength * growingTreeNodes[i]->nodes[j]->GetGrowingTimer() / (1 / RateOfGrowth);
 
+				float radius;
 				if (currentProgress < BranchLength)
 				{
+					radius = pow(growingTreeNodes[i]->nodes[j]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
 					//Parent
 					for (int s = 0; s < levelOfDetail + 1; s++)
 					{
@@ -364,11 +366,11 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 
 						FTransform rot = FTransform::Identity;
 
-						rot.SetRotation(growingTreeNodes[i].nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+						rot.SetRotation(growingTreeNodes[i]->nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
 
 
 						FTransform tf = FTransform::Identity;
-						tf.AddToTranslation(growingTreeNodes[i].nodes[j]->GetNext()->GetTransform().GetTranslation());
+						tf.AddToTranslation(growingTreeNodes[i]->nodes[j]->GetNext()->GetTransform().GetTranslation());
 
 						// radial angle of the vertex
 						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
@@ -385,18 +387,20 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 						uvs.Add(uv);
 					}
 
+					radius = pow(growingTreeNodes[i]->nodes[j]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
 					//This Node
 					for (int s = 0; s < levelOfDetail + 1; s++)
 					{
 						FVector pos = FVector::Zero();
 
 						FTransform rot = FTransform::Identity;
-						rot.SetRotation(growingTreeNodes[i].nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+						rot.SetRotation(growingTreeNodes[i]->nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
 
 
 						FTransform tf = FTransform::Identity;
-						FVector translation = (growingTreeNodes[i].nodes[j]->GetTransform().GetTranslation() - growingTreeNodes[i].nodes[j]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
-						tf.AddToTranslation(growingTreeNodes[i].nodes[j]->GetTransform().GetTranslation() - translation);
+						FVector translation = (growingTreeNodes[i]->nodes[j]->GetTransform().GetTranslation() - growingTreeNodes[i]->nodes[j]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
+						tf.AddToTranslation(growingTreeNodes[i]->nodes[j]->GetTransform().GetTranslation() - translation);
 
 						// radial angle of the vertex
 						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
@@ -426,16 +430,22 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 					break;
 				}
 
-				if (finalTreeNodeActors.Find(growingTreeNodes[i].nodes[j]) == INDEX_NONE)
+				if (finalTreeNodeActors.Find(growingTreeNodes[i]->nodes[j]) == INDEX_NONE)
 				{
-					finalTreeNodeActors.Add(growingTreeNodes[i].nodes[j]);
+					finalTreeNodeActors.Add(growingTreeNodes[i]->nodes[j]);
 				}
-				growingTreeNodes[i].nodes.RemoveAt(j);
-				if(growingTreeNodes[i].nodes.IsEmpty())
-				{
-					growingTreeNodes.RemoveAt(i);
-				}
+
+				growingTreeNodes[i]->nodes.RemoveAt(j);
 			}
+
+		}
+	}
+
+	if (!growingTreeNodes.IsEmpty())
+	{
+		if (growingTreeNodes.Last()->nodes.IsEmpty())
+		{
+			growingTreeNodes.Pop();
 		}
 	}
 }
@@ -488,10 +498,10 @@ bool AShortestPathTreeSeed::StepAStarAlgorithm()
 			if (currentNode == guidingVectorNodes[0])
 			{
 				//Done
-				FBranch newBranch;
+				FBranch* newBranch = new FBranch;
 				while (currentNode)
 				{
-					newBranch.nodes.Add(currentNode);
+					newBranch->nodes.Add(currentNode);
 					if (currentNode->GetPrevious())
 					{
 						if (!currentNode->GetPrevious()->GetNext())
@@ -500,8 +510,40 @@ bool AShortestPathTreeSeed::StepAStarAlgorithm()
 						}
 					}
 					currentNode = currentNode->GetPrevious();
+				}				
+
+				if (!trunk)
+				{
+					for(int i =0; i<newBranch->nodes.Num();i++)
+					{
+						if (newBranch->nodes[i]->GetPrevious())
+						{
+							newBranch->nodes[i]->SetNext(newBranch->nodes[i]->GetPrevious());
+						}
+						else
+						{
+							newBranch->nodes[i]->SetNext(nullptr);
+						}
+					}
 				}
-				growingTreeNodes.Add(newBranch);
+
+				for(int i = newBranch->nodes.Num()-1; i>=0; i--)
+				{
+					if(newBranch->nodes[i]->GetPrevious())
+					{
+						newBranch->nodes[i]->IncrementChildrenCount();
+					}
+				}
+
+				if(trunk)
+				{
+					growingTreeNodes.Add(newBranch);
+				}
+				else
+				{
+ 					trunk = newBranch;
+				}
+
 				return true;
 			}
 

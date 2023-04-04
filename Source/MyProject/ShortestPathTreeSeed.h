@@ -42,6 +42,9 @@ public:
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		int NumberOfGuidingVectors;
 
+	UPROPERTY(Category = "Nodes", EditAnywhere)
+		int NumberOfEndpoints;
+
 	UPROPERTY(Category = "Mesh", EditAnywhere)
 		float MeshGrowthRate = 3.52;
 
@@ -73,7 +76,9 @@ private:
 	TArray<int> endPointIndexes;
 
 	TArray<AGuidingVectorNode*> finalTreeNodeActors;
-	TArray<FBranch> growingTreeNodes;
+	TArray<FBranch*> growingTreeNodes;
+	FBranch* trunk;
+	int trunkNodesGenerated = 0;
 
 	float crownRadius=0;
 	float trunkHeight=0;

@@ -60,6 +60,9 @@ public:
 
 	void ResetInfo();
 
+	void IncrementChildrenCount();
+	int GetNumOfChildren();
+
 protected:
 
 	// Called when the game starts or when spawned
@@ -79,4 +82,5 @@ private:
 	float gscore = -1;
 	bool isUsed = false;
 	float growingTimer = 0;
+	int numOfChildren=0;
 };

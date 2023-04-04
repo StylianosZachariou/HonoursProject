@@ -71,8 +71,15 @@ AGuidingVectorNode* AGuidingVectorNode::GetPrevious()
 void AGuidingVectorNode::SetNext(AGuidingVectorNode* next)
 {
 	nextNode = next;
-	pathDirectionVector = GetActorLocation() - next->GetActorLocation();
-	pathDirectionVector.Normalize();
+	if (next)
+	{
+		pathDirectionVector = GetActorLocation() - next->GetActorLocation();
+		pathDirectionVector.Normalize();
+	}
+	else
+	{
+		pathDirectionVector = FVector::Zero();
+	}
 }
 
 bool AGuidingVectorNode::GetIsParent()
@@ -170,6 +177,20 @@ float AGuidingVectorNode::GetGrowingTimer()
 void AGuidingVectorNode::AddToGrowingTimer(float time)
 {
 	growingTimer += time;
+}
+
+void AGuidingVectorNode::IncrementChildrenCount()
+{
+	numOfChildren++;
+	if(nextNode)
+	{
+		nextNode->IncrementChildrenCount();
+	}
+}
+
+int AGuidingVectorNode::GetNumOfChildren()
+{
+	return numOfChildren;
 }
 
 TArray<AGuidingVectorNode*> AGuidingVectorNode::GetConnections()
