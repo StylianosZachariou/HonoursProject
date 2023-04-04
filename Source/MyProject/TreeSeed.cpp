@@ -12,18 +12,13 @@ ATreeSeed::ATreeSeed()
 	RateOfGrowth = 10;
 }
 
-// Called when the game starts or when spawned
-void ATreeSeed::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
-
-// Called every frame
 void ATreeSeed::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 }
 
+void ATreeSeed::BeginPlay()
+{
+	Super::BeginPlay();
+}
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Actor.h"
 #include "TreeNode.generated.h"
 
@@ -19,14 +20,17 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
 
-	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;
+//	UPROPERTY(EditAnywhere)
+//		UStaticMeshComponent* StaticMeshComponent;
 
 	UPROPERTY(EditAnywhere)
 		USphereComponent* SphereComponent;
 
 	UPROPERTY(EditAnywhere)
 		USphereComponent* KillRange;
+
+	UPROPERTY(VisibleAnywhere)
+		UCapsuleComponent* collider;
 
 	UFUNCTION()
 		void OnKillOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,	bool bFromSweep, const FHitResult& SweepResult);
@@ -54,11 +58,18 @@ public:
 	void CalculateCurrentDirection(FVector parentNodeLocation);
 	FVector GetCurrentDirection();
 
-	void CalculateNextTreeNodePosition(bool useDirection);
+	void CalculateNextTreeNodePosition(bool useDirection, float branchLength);
 
 	bool HasAttractionInfluences();
 
 	int numOfChildren = 0;
+
+	ATreeNode* parent=nullptr;
+
+	void IncrementChildCount();
+
+	float growingTimer = 0;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -68,4 +79,5 @@ private:
 	TArray<AActor*> detractionInfluences;
 	FVector currentDirection;
 	FVector* nextTreeNodePosition;
+	float nodebranchLength;
 };

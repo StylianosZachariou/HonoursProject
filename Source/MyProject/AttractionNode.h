@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Actor.h"
 #include "AttractionNode.generated.h"
 
@@ -21,12 +22,6 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		UStaticMeshComponent* StaticMeshComponent;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	UPROPERTY(VisibleAnywhere)
+		UCapsuleComponent* collider;
 };

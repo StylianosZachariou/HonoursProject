@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "TreeSeed.h"
-
+#include "ProceduralMeshComponent.h"
 #include "SpaceColonizationTreeSeed.generated.h"
 
 class AAttractionNode;
@@ -24,6 +24,12 @@ public:
 	UPROPERTY(Category = "myCategory", VisibleAnywhere, BlueprintReadWrite)
 		USceneComponent* SeedSceneComponent;
 
+	UPROPERTY(Category = "Mesh", VisibleAnywhere)
+		UProceduralMeshComponent* MeshComponent;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		UMaterialInstance* Material;
+
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<ATreeNode> TreeNodeToSpawn;
 
@@ -33,6 +39,21 @@ public:
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		int NumOfAttractionPoints;
 
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		float MeshGrowthRate=3.52;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		float levelOfDetail = 15;
+
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		float MaximumAngleOfLightRotation = 15;
+
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		bool useLight;
+
+	UPROPERTY(Category = "Branch", EditAnywhere)
+		float BranchLength = 20;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -40,6 +61,8 @@ protected:
 private:
 	TArray<AAttractionNode*> attractionPoints;
 	TArray<ATreeNode*> nodes;
+
+	void ApplyEnvironment();
 
 	//Create Attraction Points
 	void CreateAttractionPoints();
@@ -50,8 +73,19 @@ private:
 	void CreateNewNodes();
 	void SpawnNewNode(ATreeNode* parentNode);
 	void SpawnNewNode();
+	void GrowBranches(float DeltaTime);
+
+	//Mesh Stuff
+	void CreateMesh();
 
 	TArray<ATreeNode*> newNodeQueue;
+	TArray<ATreeNode*> growingNodeQueue;
 
 	bool GrowingWithDirection = true;
+
+	FVector windOffset = FVector::Zero();
+	FRotator lightRotation = FRotator::ZeroRotator;
+	float crownRadius;
+	float trunkheight;
+
 };
