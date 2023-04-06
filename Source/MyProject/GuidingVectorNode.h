@@ -63,6 +63,9 @@ public:
 	void IncrementChildrenCount();
 	int GetNumOfChildren();
 
+	void SetMeshSectionIndex(int index);
+	int GetMeshSectionIndex();
+
 protected:
 
 	// Called when the game starts or when spawned
@@ -83,4 +86,5 @@ private:
 	bool isUsed = false;
 	float growingTimer = 0;
 	int numOfChildren=0;
+	int meshSectionIndex = -1;
 };

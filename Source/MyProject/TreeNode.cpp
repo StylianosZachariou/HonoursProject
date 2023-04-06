@@ -95,6 +95,16 @@ void ATreeNode::IncrementChildCount()
 	}
 }
 
+void ATreeNode::SetMeshSectionIndex(int index)
+{
+	meshSectionIndex = index;
+}
+
+int ATreeNode::GetMeshSectionIndex()
+{
+	return meshSectionIndex;
+}
+
 // Called when the game starts or when spawned
 void ATreeNode::BeginPlay()
 {

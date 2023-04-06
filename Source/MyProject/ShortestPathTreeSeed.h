@@ -33,6 +33,9 @@ public:
 	UPROPERTY(Category = "Mesh", EditAnywhere)
 		UMaterialInstance* Material;
 
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		int NodeMeshesRenderedPerFrame = 3;
+
 	UPROPERTY(Category = "myCategory", VisibleAnywhere, BlueprintReadWrite)
 		USceneComponent* SeedSceneComponent;
 
@@ -92,4 +95,7 @@ private:
 	FVector windOffset=FVector::Zero();
 	FRotator lightRotation = FRotator::ZeroRotator;
 	bool trunkBuild = false;
+
+	int renderedNodeMeshes = 0;
+	
 };

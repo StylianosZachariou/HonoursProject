@@ -70,6 +70,9 @@ public:
 
 	float growingTimer = 0;
 
+	void SetMeshSectionIndex(int index);
+	int GetMeshSectionIndex();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -80,4 +83,5 @@ private:
 	FVector currentDirection;
 	FVector* nextTreeNodePosition;
 	float nodebranchLength;
+	int meshSectionIndex=-1;
 };

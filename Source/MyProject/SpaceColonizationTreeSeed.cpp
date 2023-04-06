@@ -223,7 +223,12 @@ void ASpaceColonizationTreeSeed::SpawnNewNode()
 
 void ASpaceColonizationTreeSeed::CreateMesh()
 {
-	for (int i = 0; i < nodes.Num(); i++)
+	if (renderedNodeMeshes >= nodes.Num())
+	{
+		renderedNodeMeshes = 0;
+	}
+
+	for (int i = renderedNodeMeshes; i <= NodeMeshesRenderedPerFrame+renderedNodeMeshes && i<nodes.Num(); i++)
 	{
 		TArray<FVector> vertices;
 		TArray<FVector2D> uvs;
@@ -232,6 +237,18 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 
 		if (nodes[i]->parent)
 		{
+			int currentMeshSection = nodes[i]->GetMeshSectionIndex();
+			if(currentMeshSection >= 0)
+			{
+				MeshComponent->ClearMeshSection(currentMeshSection);
+			}
+			else
+			{
+				currentMeshSection = MeshComponent->GetNumSections();
+				nodes[i]->SetMeshSectionIndex(currentMeshSection);
+			}
+			
+
 			float radius = pow(nodes[i]->parent->numOfChildren * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 
 			//Parent
@@ -293,10 +310,10 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 			}
 
 			//Material
-			MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
+			MeshComponent->SetMaterial(currentMeshSection, Material);
 
 			//Create Section
-			MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 
 			vertices.Empty();
 			uvs.Empty();
@@ -304,6 +321,12 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 
 			int sphereDetail = levelOfDetail;
 			UKismetProceduralMeshLibrary::CreateGridMeshTriangles(sphereDetail + 1, sphereDetail + 1, true, triangles);
+
+			currentMeshSection++;
+			if (currentMeshSection < MeshComponent->GetNumSections())
+			{
+				MeshComponent->ClearMeshSection(currentMeshSection);
+			}
 
 			// Create Circle
 			for (int m = sphereDetail + 1; m > 0; m--)
@@ -323,15 +346,18 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 			}
 
 			//Material
-			MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
+			MeshComponent->SetMaterial(currentMeshSection, Material);
 
 			//Create Section
-			MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 
 			vertices.Empty();
 			uvs.Empty();
 			triangles.Empty();
+			
 		}
+		renderedNodeMeshes++;
+		
 	}
 }
 
@@ -349,6 +375,17 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 		{
 			if (growingNodeQueue[i]->parent)
 			{
+				int currentMeshSection = growingNodeQueue[i]->GetMeshSectionIndex();
+				if (currentMeshSection >= 0)
+				{
+					MeshComponent->ClearMeshSection(currentMeshSection);
+				}
+				else
+				{
+					currentMeshSection = MeshComponent->GetNumSections();
+					growingNodeQueue[i]->SetMeshSectionIndex(currentMeshSection);
+				}
+
 				TArray<FVector> vertices;
 				TArray<FVector2D> uvs;
 
@@ -418,19 +455,21 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 
 					//Create Section
 					//Material
-					MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
-					MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+					MeshComponent->SetMaterial(currentMeshSection, Material);
+					MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 					vertices.Empty();
 					uvs.Empty();
 				}
 				else
 				{
+					growingNodeQueue[i]->SetMeshSectionIndex(-1);
 					nodes.Add(growingNodeQueue[i]);
 					growingNodeQueue.RemoveAt(i);
 				}
 			}
 			else
 			{
+				growingNodeQueue[i]->SetMeshSectionIndex(-1);
 				nodes.Add(growingNodeQueue[i]);
 				growingNodeQueue.RemoveAt(i);
 			}
@@ -444,7 +483,6 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 
 }
 
-// Called every frame
 void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -452,7 +490,6 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 	TimeOfGrowth -= DeltaTime;
 	if (TimeOfGrowth >= 0)
 	{
-		MeshComponent->ClearAllMeshSections();
 		if (newNodeQueue.Num() > 0)
 		{
 			CreateNewNodes();
@@ -470,17 +507,5 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 		}
 		CreateMesh();
 	}
-//	else
-//	{
-		
-	//	for(int i = 0 ; i < attractionPoints.Num(); i++)
-	//	{
-	//		if (ensure(attractionPoints[i]))
-	//		{
-	//			attractionPoints[i]->Destroy();
-	//		}
-	//	}
-	//	attractionPoints.Empty();/
-//	}
 }
 

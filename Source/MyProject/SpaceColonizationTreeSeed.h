@@ -30,6 +30,9 @@ public:
 	UPROPERTY(Category = "Mesh", EditAnywhere)
 		UMaterialInstance* Material;
 
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		int NodeMeshesRenderedPerFrame = 10;
+
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<ATreeNode> TreeNodeToSpawn;
 
@@ -88,4 +91,5 @@ private:
 	float crownRadius;
 	float trunkheight;
 
+	int renderedNodeMeshes = 0;
 };

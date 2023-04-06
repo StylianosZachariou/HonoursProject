@@ -193,6 +193,16 @@ int AGuidingVectorNode::GetNumOfChildren()
 	return numOfChildren;
 }
 
+void AGuidingVectorNode::SetMeshSectionIndex(int index)
+{
+	meshSectionIndex = index;
+}
+
+int AGuidingVectorNode::GetMeshSectionIndex()
+{
+	return meshSectionIndex;
+}
+
 TArray<AGuidingVectorNode*> AGuidingVectorNode::GetConnections()
 {
 	return connections;

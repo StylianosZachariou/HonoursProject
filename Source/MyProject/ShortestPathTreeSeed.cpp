@@ -22,21 +22,24 @@ void AShortestPathTreeSeed::Tick(float DeltaTime)
 
 	if (!endPointIndexes.IsEmpty())
 	{
-		if (StepAStarAlgorithm())
+		if (!endPointIndexes.IsEmpty())
 		{
-			ResetAStar();
+			if (StepAStarAlgorithm())
+			{
+				ResetAStar();
+			}
 		}
+
+		if (trunkBuild)
+		{
+			GrowBranches(DeltaTime);
+		}
+		else
+		{
+			GrowTrunk(DeltaTime);
+		}
+		CreateMesh();
 	}
-	MeshComponent->ClearAllMeshSections();
-	if(trunkBuild)
-	{
-		GrowBranches(DeltaTime);
-	}
-	else
-	{
-		GrowTrunk(DeltaTime);
-	}
-	CreateMesh();
 }
 
 void AShortestPathTreeSeed::BeginPlay()
@@ -83,7 +86,7 @@ void AShortestPathTreeSeed::SpawnGuidingVector(FVector location)
 
 void AShortestPathTreeSeed::ChooseEndpoints()
 {
-	for(int i =0; i < NumberOfEndpoints; i++)
+	for (int i = 0; i < NumberOfEndpoints; i++)
 	{
 		int randIndex = FMath::RandRange(1, guidingVectorNodes.Num() - 1);
 		guidingVectorNodes[randIndex]->SetEndpoint();
@@ -108,17 +111,35 @@ void AShortestPathTreeSeed::CreateTrunk()
 
 void AShortestPathTreeSeed::CreateMesh()
 {
-	for (int i = 0; i < finalTreeNodeActors.Num(); i++)
+	if (renderedNodeMeshes >= finalTreeNodeActors.Num())
 	{
-		TArray<FVector> vertices;
-		TArray<FVector2D> uvs;
-		TArray<int32> triangles;
-		UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+		renderedNodeMeshes = 0;
+	}
+
+	TArray<FVector> vertices;
+	TArray<FVector2D> uvs;
+	TArray<int32> triangles;
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+
+	for (int i = renderedNodeMeshes; i < NodeMeshesRenderedPerFrame + renderedNodeMeshes && i < finalTreeNodeActors.Num(); i++)
+	{
 		float radius;
+
 		if (finalTreeNodeActors[i]->GetNext())
 		{
+			int currentMeshSection = finalTreeNodeActors[i]->GetMeshSectionIndex();
+			if (currentMeshSection >= 0)
+			{
+				MeshComponent->ClearMeshSection(currentMeshSection);
+			}
+			else
+			{
+				currentMeshSection = MeshComponent->GetNumSections();
+				finalTreeNodeActors[i]->SetMeshSectionIndex(currentMeshSection);
+			}
+
 			radius = pow(finalTreeNodeActors[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-			
+
 			//Parent
 			for (int s = 0; s < levelOfDetail + 1; s++)
 			{
@@ -177,125 +198,142 @@ void AShortestPathTreeSeed::CreateMesh()
 			}
 
 			//Material
-			MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
+			MeshComponent->SetMaterial(currentMeshSection, Material);
 
 			//Create Section
-			MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+			MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 
 			vertices.Empty();
 			uvs.Empty();
-			triangles.Empty();
-
-			
 		}
 
 		radius = pow(finalTreeNodeActors[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 		CreateSphereMesh(finalTreeNodeActors[i], radius);
 		
+		renderedNodeMeshes++;
 	}
 }
 
 void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 {
-	TArray<FVector> vertices;
-	TArray<FVector2D> uvs;
-	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
 	if (trunk)
 	{
-		for (int i = trunk->nodes.Num()-1; i >=0; i--)
+		TArray<int32> triangles;
+		UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+		for (int i = trunk->nodes.Num() - 1; i >= 0; i--)
 		{
-			if (trunk->nodes[i]->GetNext())
+			TArray<FVector> vertices;
+			TArray<FVector2D> uvs;
+			if (finalTreeNodeActors.Find(trunk->nodes[i]) == INDEX_NONE)
 			{
-				float BranchLength = FVector::Dist(trunk->nodes[i]->GetActorLocation(), trunk->nodes[i]->GetNext()->GetActorLocation());
-				trunk->nodes[i]->AddToGrowingTimer(DeltaTime);
-				float currentProgress = BranchLength * trunk->nodes[i]->GetGrowingTimer() / (1 / RateOfGrowth);
 
-				float radius;
-				if (currentProgress < BranchLength)
+				if (trunk->nodes[i]->GetNext())
 				{
-					radius = pow(trunk->nodes[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-					//Parent
-					for (int s = 0; s < levelOfDetail + 1; s++)
+					int currentMeshSection = trunk->nodes[i]->GetMeshSectionIndex();
+					if (currentMeshSection >= 0)
 					{
-						FVector pos = FVector::Zero();
+						MeshComponent->ClearMeshSection(currentMeshSection);
+					}
+					else
+					{
+						currentMeshSection = MeshComponent->GetNumSections();
+						trunk->nodes[i]->SetMeshSectionIndex(currentMeshSection);
+					}
+					float BranchLength = FVector::Dist(trunk->nodes[i]->GetActorLocation(), trunk->nodes[i]->GetNext()->GetActorLocation());
+					trunk->nodes[i]->AddToGrowingTimer(DeltaTime);
+					float currentProgress = BranchLength * trunk->nodes[i]->GetGrowingTimer() / (1 / RateOfGrowth);
 
-						FTransform rot = FTransform::Identity;
+					float radius;
+					if (currentProgress < BranchLength)
+					{
 
-						rot.SetRotation(trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+						radius = pow(trunk->nodes[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
+						//Parent
+						for (int s = 0; s < levelOfDetail + 1; s++)
+						{
+							FVector pos = FVector::Zero();
+
+							FTransform rot = FTransform::Identity;
+
+							rot.SetRotation(trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
 
 
-						FTransform tf = FTransform::Identity;
-						tf.AddToTranslation(trunk->nodes[i]->GetNext()->GetTransform().GetTranslation());
+							FTransform tf = FTransform::Identity;
+							tf.AddToTranslation(trunk->nodes[i]->GetNext()->GetTransform().GetTranslation());
 
-						// radial angle of the vertex
-						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
-						FTransform anotherOne = FTransform::Identity;
-						anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
+							// radial angle of the vertex
+							float alpha = ((float)s / levelOfDetail) * PI * 2.f;
+							FTransform anotherOne = FTransform::Identity;
+							anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
 
-						FTransform total = anotherOne * rot * tf;
+							FTransform total = anotherOne * rot * tf;
 
-						pos = total.TransformPosition(pos);
-						pos -= GetActorLocation();
+							pos = total.TransformPosition(pos);
+							pos -= GetActorLocation();
 
-						vertices.Add(pos);
-						FVector2D uv = FVector2D(s / levelOfDetail, 0);
-						uvs.Add(uv);
+							vertices.Add(pos);
+							FVector2D uv = FVector2D(s / levelOfDetail, 0);
+							uvs.Add(uv);
+						}
+
+						radius = pow(trunk->nodes[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
+						//This Node
+						for (int s = 0; s < levelOfDetail + 1; s++)
+						{
+							FVector pos = FVector::Zero();
+
+							FTransform rot = FTransform::Identity;
+							rot.SetRotation(trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+
+							FTransform tf = FTransform::Identity;
+							FVector translation = (trunk->nodes[i]->GetTransform().GetTranslation() - trunk->nodes[i]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
+							tf.AddToTranslation(trunk->nodes[i]->GetTransform().GetTranslation() - translation);
+
+							// radial angle of the vertex
+							float alpha = (float)s / levelOfDetail * PI * 2.f;
+							FTransform anotherOne = FTransform::Identity;
+							anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
+
+							FTransform total = anotherOne * rot * tf;
+
+							pos = total.TransformPosition(pos);
+							pos -= GetActorLocation();
+
+							vertices.Add(pos);
+
+							FVector2D uv = FVector2D(s / levelOfDetail, 1);
+							uvs.Add(uv);
+						}
+
+						//Material
+						MeshComponent->SetMaterial(currentMeshSection, Material);
+
+						//Create Section
+						MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+
+						vertices.Empty();
+						uvs.Empty();
+						break;
 					}
 
-					radius = pow(trunk->nodes[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-					//This Node
-					for (int s = 0; s < levelOfDetail + 1; s++)
-					{
-						FVector pos = FVector::Zero();
-
-						FTransform rot = FTransform::Identity;
-						rot.SetRotation(trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
-
-						FTransform tf = FTransform::Identity;
-						FVector translation = (trunk->nodes[i]->GetTransform().GetTranslation() - trunk->nodes[i]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
-						tf.AddToTranslation(trunk->nodes[i]->GetTransform().GetTranslation() - translation);
-
-						// radial angle of the vertex
-						float alpha = (float)s / levelOfDetail * PI * 2.f;
-						FTransform anotherOne = FTransform::Identity;
-						anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
-
-						FTransform total = anotherOne * rot * tf;
-
-						pos = total.TransformPosition(pos);
-						pos -= GetActorLocation();
-
-						vertices.Add(pos);
-
-						FVector2D uv = FVector2D(s / levelOfDetail, 1);
-						uvs.Add(uv);
-					}
-
-					//Material
-					MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
-
-					//Create Section
-					MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
-
-					vertices.Empty();
-					uvs.Empty();
-					triangles.Empty();
-					break;
-				}
-
-				if (finalTreeNodeActors.Find(trunk->nodes[i]) == INDEX_NONE)
-				{
+					trunk->nodes[i]->SetMeshSectionIndex(-1);
 					trunk->nodes[i]->IncrementChildrenCount();
 					finalTreeNodeActors.Add(trunk->nodes[i]);
 					trunkNodesGenerated++;
+
+				}
+				else
+				{
+					finalTreeNodeActors.Add(trunk->nodes[i]);
+					trunkNodesGenerated++;
+
 				}
 			}
 		}
 
-		if (trunkNodesGenerated >= trunk->nodes.Num()-1)
+		if (trunkNodesGenerated >= trunk->nodes.Num())
 		{
 			trunkBuild = true;
 		}
@@ -309,6 +347,18 @@ void AShortestPathTreeSeed::CreateSphereMesh(AGuidingVectorNode* node, float rad
 	TArray<FVector2D> uvs;
 	TArray<int32> triangles;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(levelOfDetail + 1, levelOfDetail + 1, true, triangles);
+
+	int currentMeshSection = node->GetMeshSectionIndex();
+	if (currentMeshSection >= 0)
+	{
+		currentMeshSection++;
+		MeshComponent->ClearMeshSection(currentMeshSection);
+	}
+	else
+	{
+		currentMeshSection = MeshComponent->GetNumSections();
+		node->SetMeshSectionIndex(currentMeshSection);
+	}
 
 	// Create Circle
 	for (int m = levelOfDetail + 1; m > 0; m--)
@@ -329,10 +379,10 @@ void AShortestPathTreeSeed::CreateSphereMesh(AGuidingVectorNode* node, float rad
 
 
 	//Material
-	MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
+	MeshComponent->SetMaterial(currentMeshSection, Material);
 
 	//Create Section
-	MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+	MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 
 	vertices.Empty();
 	uvs.Empty();
@@ -341,7 +391,7 @@ void AShortestPathTreeSeed::CreateSphereMesh(AGuidingVectorNode* node, float rad
 
 void AShortestPathTreeSeed::ApplyEnvironment()
 {
-	crownRadius = 500;
+	crownRadius = 350;
 	trunkHeight = 150;
 
 	AEnvironmentSettings* environment = Cast<AEnvironmentSettings>(GetWorldSettings());
@@ -411,105 +461,130 @@ void AShortestPathTreeSeed::ApplyEnvironment()
 
 void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 {
+	TArray<int32> triangles;
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+
 	for (int i = 0; i < growingTreeNodes.Num(); i++)
 	{
-		TArray<FVector> vertices;
-		TArray<FVector2D> uvs;
-		TArray<int32> triangles;
-		UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
 		for (int j = 0; j < growingTreeNodes[i]->nodes.Num(); j++)
 		{
-			if (growingTreeNodes[i]->nodes[j]->GetNext())
+			TArray<FVector> vertices;
+			TArray<FVector2D> uvs;
+			if (finalTreeNodeActors.Find(growingTreeNodes[i]->nodes[j]) == INDEX_NONE )
 			{
-				float BranchLength = FVector::Dist(growingTreeNodes[i]->nodes[j]->GetActorLocation(), growingTreeNodes[i]->nodes[j]->GetNext()->GetActorLocation());
-				growingTreeNodes[i]->nodes[j]->AddToGrowingTimer(DeltaTime);
-				float currentProgress = BranchLength * growingTreeNodes[i]->nodes[j]->GetGrowingTimer() / (1 / RateOfGrowth);
-
-				float radius;
-				if (currentProgress < BranchLength)
+				if (growingTreeNodes[i]->nodes[j]->GetNext())
 				{
-					radius = pow(growingTreeNodes[i]->nodes[j]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-					//Parent
-					for (int s = 0; s < levelOfDetail + 1; s++)
+					if (finalTreeNodeActors.Find(growingTreeNodes[i]->nodes[j]->GetNext()) != INDEX_NONE)
 					{
-						FVector pos = FVector::Zero();
+						int currentMeshSection = growingTreeNodes[i]->nodes[j]->GetMeshSectionIndex();
+						if (currentMeshSection >= 0)
+						{
+							MeshComponent->ClearMeshSection(currentMeshSection);
+						}
+						else
+						{
+							currentMeshSection = MeshComponent->GetNumSections();
+							growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(currentMeshSection);
+						}
 
-						FTransform rot = FTransform::Identity;
+						float BranchLength = FVector::Dist(growingTreeNodes[i]->nodes[j]->GetActorLocation(), growingTreeNodes[i]->nodes[j]->GetNext()->GetActorLocation());
+						growingTreeNodes[i]->nodes[j]->AddToGrowingTimer(DeltaTime);
+						float currentProgress = BranchLength * growingTreeNodes[i]->nodes[j]->GetGrowingTimer() / (1 / RateOfGrowth);
 
-						rot.SetRotation(growingTreeNodes[i]->nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+						float radius;
+						if (currentProgress < BranchLength)
+						{
+							radius = pow(growingTreeNodes[i]->nodes[j]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
+							//Parent
+							for (int s = 0; s < levelOfDetail + 1; s++)
+							{
+								FVector pos = FVector::Zero();
+
+								FTransform rot = FTransform::Identity;
+
+								rot.SetRotation(growingTreeNodes[i]->nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
 
 
-						FTransform tf = FTransform::Identity;
-						tf.AddToTranslation(growingTreeNodes[i]->nodes[j]->GetNext()->GetTransform().GetTranslation());
+								FTransform tf = FTransform::Identity;
+								tf.AddToTranslation(growingTreeNodes[i]->nodes[j]->GetNext()->GetTransform().GetTranslation());
 
-						// radial angle of the vertex
-						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
-						FTransform anotherOne = FTransform::Identity;
-						anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
+								// radial angle of the vertex
+								float alpha = ((float)s / levelOfDetail) * PI * 2.f;
+								FTransform anotherOne = FTransform::Identity;
+								anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
 
-						FTransform total = anotherOne * rot * tf;
+								FTransform total = anotherOne * rot * tf;
 
-						pos = total.TransformPosition(pos);
-						pos -= GetActorLocation();
+								pos = total.TransformPosition(pos);
+								pos -= GetActorLocation();
 
-						vertices.Add(pos);
-						FVector2D uv = FVector2D(s / levelOfDetail, 0);
-						uvs.Add(uv);
+								vertices.Add(pos);
+								FVector2D uv = FVector2D(s / levelOfDetail, 0);
+								uvs.Add(uv);
+							}
+
+							radius = pow(growingTreeNodes[i]->nodes[j]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+
+							//This Node
+							for (int s = 0; s < levelOfDetail + 1; s++)
+							{
+								FVector pos = FVector::Zero();
+
+								FTransform rot = FTransform::Identity;
+								rot.SetRotation(growingTreeNodes[i]->nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
+
+
+								FTransform tf = FTransform::Identity;
+								FVector translation = (growingTreeNodes[i]->nodes[j]->GetTransform().GetTranslation() - growingTreeNodes[i]->nodes[j]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
+								tf.AddToTranslation(growingTreeNodes[i]->nodes[j]->GetTransform().GetTranslation() - translation);
+
+								// radial angle of the vertex
+								float alpha = ((float)s / levelOfDetail) * PI * 2.f;
+								FTransform anotherOne = FTransform::Identity;
+								anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
+
+								FTransform total = anotherOne * rot * tf;
+
+								pos = total.TransformPosition(pos);
+								pos -= GetActorLocation();
+
+								vertices.Add(pos);
+
+								FVector2D uv = FVector2D(s / levelOfDetail, 1);
+								uvs.Add(uv);
+							}
+
+							//Material
+							MeshComponent->SetMaterial(currentMeshSection, Material);
+
+							//Create Section
+							MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+
+							break;
+						}
+
+						growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(-1);
+
+						growingTreeNodes[i]->nodes[j]->IncrementChildrenCount();
+						finalTreeNodeActors.Add(growingTreeNodes[i]->nodes[j]);
+
+						growingTreeNodes[i]->nodes.RemoveAt(j);
+
+						vertices.Empty();
+						uvs.Empty();
 					}
-
-					radius = pow(growingTreeNodes[i]->nodes[j]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-					//This Node
-					for (int s = 0; s < levelOfDetail + 1; s++)
-					{
-						FVector pos = FVector::Zero();
-
-						FTransform rot = FTransform::Identity;
-						rot.SetRotation(growingTreeNodes[i]->nodes[j]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0).Quaternion());
-
-
-						FTransform tf = FTransform::Identity;
-						FVector translation = (growingTreeNodes[i]->nodes[j]->GetTransform().GetTranslation() - growingTreeNodes[i]->nodes[j]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
-						tf.AddToTranslation(growingTreeNodes[i]->nodes[j]->GetTransform().GetTranslation() - translation);
-
-						// radial angle of the vertex
-						float alpha = ((float)s / levelOfDetail) * PI * 2.f;
-						FTransform anotherOne = FTransform::Identity;
-						anotherOne.AddToTranslation(FVector(FMath::Cos(alpha) * radius, FMath::Sin(alpha) * radius, 0));
-
-						FTransform total = anotherOne * rot * tf;
-
-						pos = total.TransformPosition(pos);
-						pos -= GetActorLocation();
-
-						vertices.Add(pos);
-
-						FVector2D uv = FVector2D(s / levelOfDetail, 1);
-						uvs.Add(uv);
-					}
-
-					//Material
-					MeshComponent->SetMaterial(MeshComponent->GetNumSections(), Material);
-
-					//Create Section
-					MeshComponent->CreateMeshSection(MeshComponent->GetNumSections(), vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
-
-					vertices.Empty();
-					uvs.Empty();
-					triangles.Empty();
-					break;
 				}
-
-				if (finalTreeNodeActors.Find(growingTreeNodes[i]->nodes[j]) == INDEX_NONE)
+				else
 				{
-					growingTreeNodes[i]->nodes[j]->IncrementChildrenCount();
 					finalTreeNodeActors.Add(growingTreeNodes[i]->nodes[j]);
+					growingTreeNodes[i]->nodes.RemoveAt(j);
 				}
-
+			}
+			else
+			{
 				growingTreeNodes[i]->nodes.RemoveAt(j);
 			}
-
 		}
 	}
 
