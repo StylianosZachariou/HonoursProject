@@ -1,71 +1,48 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "TreeSeed.h"
-#include "ProceduralMeshComponent.h"
 #include "SpaceColonizationTreeSeed.generated.h"
 
+//Forward Declaration
 class AAttractionNode;
 class ATreeNode;
 
+//The Space Colonization Tree
 UCLASS()
 class MYPROJECT_API ASpaceColonizationTreeSeed : public ATreeSeed
 {
 	GENERATED_BODY()
 
+	//Constructor
 	ASpaceColonizationTreeSeed();
 
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 public:
-	UPROPERTY(Category = "myCategory", VisibleAnywhere, BlueprintReadWrite)
-		USceneComponent* SeedSceneComponent;
 
-	UPROPERTY(Category = "Mesh", VisibleAnywhere)
-		UProceduralMeshComponent* MeshComponent;
-
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		UMaterialInstance* Material;
-
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		int NodeMeshesRenderedPerFrame = 10;
-
+	//Nodes To Spawn
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<ATreeNode> TreeNodeToSpawn;
 
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<AAttractionNode> AttractionNodeToSpawn;
 
+	//Attributes
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		int NumOfAttractionPoints;
 
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		float MeshGrowthRate=3.52;
-
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		float levelOfDetail = 15;
-
-	UPROPERTY(Category = "Environment", EditAnywhere)
-		float MaximumAngleOfLightRotation = 15;
-
-	UPROPERTY(Category = "Environment", EditAnywhere)
-		bool useLight;
-
 	UPROPERTY(Category = "Branch", EditAnywhere)
-		float BranchLength = 20;
+		float BranchLength;
 
 protected:
-	// Called when the game starts or when spawned
+
+	//Functions
 	virtual void BeginPlay() override;
 
-private:
-	TArray<AAttractionNode*> attractionPoints;
-	TArray<ATreeNode*> nodes;
+	virtual void Tick(float DeltaTime) override;
 
-	void ApplyEnvironment();
+private:
+
+	//Functions
 
 	//Create Attraction Points
 	void CreateAttractionPoints();
@@ -75,21 +52,18 @@ private:
 	void QueueNewTreeNodes();
 	void CreateNewNodes();
 	void SpawnNewNode(ATreeNode* parentNode);
-	void SpawnNewNode();
-	void GrowBranches(float DeltaTime);
 
-	//Mesh Stuff
+	//Mesh
 	void CreateMesh();
+	void GrowBranches(float DeltaTime);
+	void CreateSphereMesh(ATreeNode* node);
 
+	//General Variables
+	bool GrowingWithDirection;
+
+	//Nodes
+	TArray<AAttractionNode*> attractionPoints;
+	TArray<ATreeNode*> nodes;
 	TArray<ATreeNode*> newNodeQueue;
 	TArray<ATreeNode*> growingNodeQueue;
-
-	bool GrowingWithDirection = true;
-
-	FVector windOffset = FVector::Zero();
-	FRotator lightRotation = FRotator::ZeroRotator;
-	float crownRadius;
-	float trunkheight;
-
-	int renderedNodeMeshes = 0;
 };

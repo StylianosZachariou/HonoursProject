@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,21 +5,22 @@
 #include "GameFramework/Actor.h"
 #include "TreeNode.generated.h"
 
+//Forward Declarations
 class USphereComponent;
+
+//Tree node class used in Space Colonization algorithm
 UCLASS()
 class MYPROJECT_API ATreeNode : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+	//Constructor
 	ATreeNode();
 
+	//Component Declaration
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
-
-//	UPROPERTY(EditAnywhere)
-//		UStaticMeshComponent* StaticMeshComponent;
 
 	UPROPERTY(EditAnywhere)
 		USphereComponent* SphereComponent;
@@ -32,6 +31,19 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		UCapsuleComponent* collider;
 
+	///////////////// DEMONSTRATION PURPOSES /////////////////
+	//	UPROPERTY(EditAnywhere)
+	//		UStaticMeshComponent* StaticMeshComponent;
+	//////////////////////////////////////////////////////////
+
+	//Attributes
+	UPROPERTY(EditAnywhere)
+		float TimeUntilDeath;
+
+	UPROPERTY(EditAnywhere)
+		float MaxDensity;
+
+	//Overlap Functions
 	UFUNCTION()
 		void OnKillOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,	bool bFromSweep, const FHitResult& SweepResult);
 
@@ -41,47 +53,49 @@ public:
 	UFUNCTION()
 		void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	UPROPERTY(EditAnywhere)
-		float TimeUntilDeath;
-
-	UPROPERTY(EditAnywhere)
-		float MaxDensity;
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	//Getters
 	FVector* GetNextTreeNodePosition();
-	void ResetNextTreeNodePosition();
-
-	bool GetIsActive();
-
-	void CalculateCurrentDirection(FVector parentNodeLocation);
 	FVector GetCurrentDirection();
-
-	void CalculateNextTreeNodePosition(bool useDirection, float branchLength);
-
-	bool HasAttractionInfluences();
-
-	int numOfChildren = 0;
-
-	ATreeNode* parent=nullptr;
-
-	void IncrementChildCount();
-
-	float growingTimer = 0;
-
-	void SetMeshSectionIndex(int index);
 	int GetMeshSectionIndex();
+	bool GetIsActive();
+	bool GetHasAttractionInfluences();
+	int GetNumOfChildren();
+	float GetGrowingTimer();
+	ATreeNode* GetParent();
+
+	//Setters
+	void SetMeshSectionIndex(int index);
+	void SetParent(ATreeNode* newParent);
+
+	//Functions
+	virtual void Tick(float DeltaTime) override;
+	void ResetNextTreeNodePosition();
+	void CalculateCurrentDirection(FVector parentNodeLocation);
+	void CalculateNextTreeNodePosition(bool useDirection, float branchLength);
+	void IncrementChildCount();
+	void AddToGrowingTimer(float time);
 
 protected:
-	// Called when the game starts or when spawned
+
+	//Functions
 	virtual void BeginPlay() override;
 
 private:
+
+	//General Variables
+	FVector currentDirection;
+	float nodebranchLength;
+
+	//Influences
 	TArray<AActor*> attractionInfluences;
 	TArray<AActor*> detractionInfluences;
-	FVector currentDirection;
+
+	//Mesh Variables
+	int meshSectionIndex;
+	int numOfChildren;
+	float growingTimer;
+
+	//Previous and Next Nodes
+	ATreeNode* parent;
 	FVector* nextTreeNodePosition;
-	float nodebranchLength;
-	int meshSectionIndex=-1;
 };

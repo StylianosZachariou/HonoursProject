@@ -1,28 +1,26 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GuidingVectorNode.generated.h"
 
+//Forward Declarations
 class USphereComponent;
 class UCapsuleComponent;
 
+//Guiding Vectors used for the shortest path algorithm
 UCLASS()
 class MYPROJECT_API AGuidingVectorNode : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
+	//Constructor
 	AGuidingVectorNode();
 
+	//Component Declarations
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
-
-//	UPROPERTY(VisibleAnywhere)
-//		UStaticMeshComponent* StaticMeshComponent;
 
 	UPROPERTY(EditAnywhere)
 		USphereComponent* SphereComponent;
@@ -30,61 +28,74 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		UCapsuleComponent* collider;
 
+	///////////////// DEMONSTRATION PURPOSES /////////////////
+/*	UPROPERTY(VisibleAnywhere)
+		UStaticMeshComponent* StaticMeshComponent;
+
 	UPROPERTY(EditAnywhere)
-		UStaticMesh* coneMesh;
-	
-	void SetParent(FVector location);
-	void SetThisAsConnectionsParent();
-	bool GetIsParent();
+		UStaticMesh* coneMesh;*/
+	/////////////////////////////////////////////////////////
+
+	//Getters
 	bool GetHasParent();
-	void SetEndpoint();
-	void detectConnections();
+	bool GetIsParent();
 	bool GetIsEndpoint();
-
-	void SetPrevious(AGuidingVectorNode* previous);
 	AGuidingVectorNode* GetPrevious();
-	void SetNext(AGuidingVectorNode* next);
 	AGuidingVectorNode* GetNext();
-
-	void CalculateFGScores(FVector endLocation);
 	float GetFScore();
 	float GetGScore();
-	void SetUsed(bool used);
-	bool GetUsed();
 	FVector GetCurrentDirection();
-
 	float GetGrowingTimer();
-	void AddToGrowingTimer(float time);
-
 	TArray<AGuidingVectorNode*> GetConnections();
-
-	void ResetInfo();
-
-	void IncrementChildrenCount();
 	int GetNumOfChildren();
-
-	void SetMeshSectionIndex(int index);
 	int GetMeshSectionIndex();
+
+	//Setters
+	void SetParent(FVector location);
+	void SetThisAsConnectionsParent();
+	void SetEndpoint();
+	void SetPrevious(AGuidingVectorNode* previous);
+	void SetNext(AGuidingVectorNode* next);
+	void SetMeshSectionIndex(int index);
+
+	//Functions
+	void detectConnections();
+	void CalculateFGScores(FVector endLocation);
+	void AddToGrowingTimer(float time);
+	void ResetInfo();
+	void IncrementChildrenCount();
 
 protected:
 
-	// Called when the game starts or when spawned
+	//Functions
 	virtual void BeginPlay() override;
 
 private:
+
+	//General Variables
+	bool isParent;
+	bool hasParent;
+	bool isEndpoint;
+	float fscore;
+	float gscore;
+
+	//Guiding Vector Direction
 	FVector directionVector;
-	FVector pathDirectionVector;
+
+	//Front and Back Nodes
 	AGuidingVectorNode* nextNode;
 	AGuidingVectorNode* previousNode;
-	UMaterial* endPointMaterial;
+
+	//Connected Nodes
 	TArray<AGuidingVectorNode*> connections;
-	bool isParent = false;
-	bool hasParent = false;
-	bool isEndpoint = false;
-	float fscore = -1;
-	float gscore = -1;
-	bool isUsed = false;
-	float growingTimer = 0;
-	int numOfChildren=0;
-	int meshSectionIndex = -1;
+
+	//Mesh Variables
+	int meshSectionIndex;
+	float growingTimer;
+	FVector pathDirectionVector;
+	int numOfChildren;
+
+	///////////////// DEMONSTRATION PURPOSES /////////////////
+	//UMaterial* endPointMaterial;
+	/////////////////////////////////////////////////////////
 };

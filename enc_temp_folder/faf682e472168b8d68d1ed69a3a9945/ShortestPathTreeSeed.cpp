@@ -7,7 +7,7 @@ trunkBuild(false),
 trunkNodesGenerated(0),
 NumberOfEndpoints(70),
 growingBranchesGenerated(0),
-newBranchesGenerated(0)
+newBranchesGenerated(false)
 {
 	//Component Initializations
 	SeedSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
@@ -185,12 +185,12 @@ void AShortestPathTreeSeed::Tick(float DeltaTime)
 			//If a star is completed, reset
 			ResetAStar();
 		}
-	}	
+		
 		//If the trunkk is built
 		if (trunkBuild)
 		{
 			//If new branches are complete
-			if (newBranchesGenerated<=0)
+			if (!newBranchesGenerated)
 			{
 				GrowBranches(DeltaTime);
 			}
@@ -201,12 +201,12 @@ void AShortestPathTreeSeed::Tick(float DeltaTime)
 			GrowTrunk(DeltaTime);
 		}
 
-		if (newBranchesGenerated>0)
-		{
+///		if (newBranchesGenerated)
+//		{
 			//Update Mesh
 			CreateMesh();
-		}
-	
+//		}
+	}
 }
 
 //When the application begins
@@ -363,7 +363,14 @@ void AShortestPathTreeSeed::SetParentsGuidingVectors()
 //Create Procedural Mesh
 void AShortestPathTreeSeed::CreateMesh()
 {
-	
+	//If all node's mesh sections were rendered
+	if (renderedNodeMeshes >= finalTreeNodeActors.Num())
+	{
+		//Start from the beginning
+		renderedNodeMeshes = 0;
+		newBranchesGenerated = false;
+	}
+
 	//Vertex and UV arrays
 	TArray<FVector> vertices;
 	TArray<FVector2D> uvs;
@@ -373,22 +380,8 @@ void AShortestPathTreeSeed::CreateMesh()
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
 
 	//For the required nodes to render
-	for (int i = finalTreeNodeActors.Num() - 1 - renderedNodeMeshes; i >= finalTreeNodeActors.Num() - 1 - NodeMeshesRenderedPerFrame - renderedNodeMeshes && i >= 0; i--)
+	for (int i = renderedNodeMeshes; i < NodeMeshesRenderedPerFrame + renderedNodeMeshes && i < finalTreeNodeActors.Num(); i++)
 	{
-
-		//Delete growing mesh section
-		if (i > finalTreeNodeActors.Num() - 1 - newBranchesGenerated)
-		{
-			int currentMeshSection = finalTreeNodeActors[i]->GetMeshSectionIndex();
-			//If this node was rendered before
-			if (currentMeshSection >= 0)
-			{
-				//Clear previous mesh section
-				MeshComponent->ClearMeshSection(currentMeshSection);
-				finalTreeNodeActors[i]->SetMeshSectionIndex(-1);
-			}
-		}
-
 		//If there is a next node in path
 		if (finalTreeNodeActors[i]->GetNext())
 		{
@@ -439,17 +432,7 @@ void AShortestPathTreeSeed::CreateMesh()
 		//Create a sphere mesh
 		CreateSphereMesh(finalTreeNodeActors[i]);
 	}
-
 	renderedNodeMeshes += NodeMeshesRenderedPerFrame;
-
-	//If all node's mesh sections were rendered
-	if (renderedNodeMeshes >= finalTreeNodeActors.Num())
-	{
-		//Start from the beginning
-		renderedNodeMeshes = 0;
-		newBranchesGenerated = 0;
-	}
-
 }
 
 //Slowly grow trunk mesh
@@ -475,6 +458,21 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 				//If there is a next node
 				if (trunk->nodes[i]->GetNext())
 				{
+					int currentMeshSection = trunk->nodes[i]->GetMeshSectionIndex();
+
+					//If this node's mesh was previously rendered
+					if (currentMeshSection >= 0)
+					{
+						//Clear the mesh section
+						MeshComponent->ClearMeshSection(currentMeshSection);
+					}
+					else
+					{
+						//Assign a new mesh section to the node
+						currentMeshSection = MeshComponent->GetNumSections();
+						trunk->nodes[i]->SetMeshSectionIndex(currentMeshSection);
+					}
+
 					//Calculate the branch's length
 					float BranchLength = FVector::Dist(trunk->nodes[i]->GetActorLocation(), trunk->nodes[i]->GetNext()->GetActorLocation());
 
@@ -487,20 +485,6 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 					//If the branch is not fully developed yet
 					if (currentProgress < BranchLength)
 					{
-						int currentMeshSection = trunk->nodes[i]->GetMeshSectionIndex();
-
-						//If this node's mesh was previously rendered
-						if (currentMeshSection >= 0)
-						{
-							//Clear the mesh section
-							MeshComponent->ClearMeshSection(currentMeshSection);
-						}
-						else
-						{
-							//Assign a new mesh section to the node
-							currentMeshSection = MeshComponent->GetNumSections();
-							trunk->nodes[i]->SetMeshSectionIndex(currentMeshSection);
-						}
 
 						//Calculate the next node's mesh radius based on children
 						float radius = pow(trunk->nodes[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
@@ -537,7 +521,7 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 					}
 
 					//Reset node's mesh section
-					//trunk->nodes[i]->SetMeshSectionIndex(-1);
+					trunk->nodes[i]->SetMeshSectionIndex(-1);
 
 					//Increment Children count
 					trunk->nodes[i]->IncrementChildrenCount();
@@ -545,14 +529,14 @@ void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
 					//Add to the final mesh
 					finalTreeNodeActors.Add(trunk->nodes[i]);
 					trunkNodesGenerated++;
-					newBranchesGenerated++;
+
 				}
 				else
 				{
 					//Add to the final mesh
 					finalTreeNodeActors.Add(trunk->nodes[i]);
 					trunkNodesGenerated++;
-					newBranchesGenerated++;
+
 				}
 			}
 		}
@@ -577,8 +561,7 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
 
 	int currentGrownBranches = growingBranchesGenerated;
-
-	//For the required amount of grown branches growing branches
+	//For the required ammount of grown branches growing branches
 	for (int i = currentGrownBranches; i < growingTreeNodes.Num() && i <= GrowingNodeMeshesRenderedPerFrame + currentGrownBranches; i++)
 	{
 		//For all nodes in this branch
@@ -595,6 +578,21 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 					{
 						if (growingTreeNodes[i]->nodes[j]->GetNext()->GetMeshSectionIndex() >= 0)
 						{
+
+							int currentMeshSection = growingTreeNodes[i]->nodes[j]->GetMeshSectionIndex();
+							//If this node's mesh wa rendered before
+							if (currentMeshSection >= 0)
+							{
+								//Clear mesh section
+								MeshComponent->ClearMeshSection(currentMeshSection);
+							}
+							else
+							{
+								//Assign new mesh section index
+								currentMeshSection = MeshComponent->GetNumSections();
+								growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(currentMeshSection);
+							}
+
 							//Calculate branch length
 							float BranchLength = FVector::Dist(growingTreeNodes[i]->nodes[j]->GetActorLocation(), growingTreeNodes[i]->nodes[j]->GetNext()->GetActorLocation());
 
@@ -607,19 +605,6 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 							//If the branch is not fully grown
 							if (currentProgress < BranchLength)
 							{
-								int currentMeshSection = growingTreeNodes[i]->nodes[j]->GetMeshSectionIndex();
-								//If this node's mesh wa rendered before
-								if (currentMeshSection >= 0)
-								{
-									//Clear mesh section
-									MeshComponent->ClearMeshSection(currentMeshSection);
-								}
-								else
-								{
-									//Assign new mesh section index
-									currentMeshSection = MeshComponent->GetNumSections();
-									growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(currentMeshSection);
-								}
 								//Calculate the next node's mesh radius based on children
 								float radius = pow(growingTreeNodes[i]->nodes[j]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 
@@ -655,7 +640,7 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 							}
 
 							//Reset mesh index
-							//growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(-1);
+							growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(-1);
 
 							//Increment node's Children count
 							growingTreeNodes[i]->nodes[j]->IncrementChildrenCount();
@@ -664,10 +649,9 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 							finalTreeNodeActors.Add(growingTreeNodes[i]->nodes[j]);
 
 							//Remove from growing nodes
-							growingTreeNodes[i]->nodes.RemoveAtSwap(j);
+							growingTreeNodes[i]->nodes.RemoveAt(j);
 
-							newBranchesGenerated++;
-							growingBranchesGenerated++;
+							newBranchesGenerated = true;
 						}
 					}
 				}
@@ -677,17 +661,16 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 					finalTreeNodeActors.Add(growingTreeNodes[i]->nodes[j]);
 
 					//Remove from growing node
-					growingTreeNodes[i]->nodes.RemoveAtSwap(j);
-					newBranchesGenerated++;
-					growingBranchesGenerated++;
+					growingTreeNodes[i]->nodes.RemoveAt(j);
 				}
 			}
 			else
 			{
 				//Remove from growing node
-				growingTreeNodes[i]->nodes.RemoveAtSwap(j);
+				growingTreeNodes[i]->nodes.RemoveAt(j);
 			}
 		}
+		growingBranchesGenerated++;
 	}
 }
 
