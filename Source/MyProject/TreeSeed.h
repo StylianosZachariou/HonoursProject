@@ -1,31 +1,74 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ProceduralMeshComponent.h"
 #include "TreeSeed.generated.h"
 
+//Base class for any procedurally generated tree classes
 UCLASS()
 class MYPROJECT_API ATreeSeed : public AActor
 {
 	GENERATED_BODY()
 	
-public:	
-	// Sets default values for this actor's properties
+public:
+
+	//Constructor
 	ATreeSeed();
 
-	UPROPERTY(EditAnywhere)
+	//Components
+	UPROPERTY(Category = "SceneComponent", VisibleAnywhere, BlueprintReadWrite)
+		USceneComponent* SeedSceneComponent;
+
+	//Mesh
+	UPROPERTY(Category = "Mesh", VisibleAnywhere)
+		UProceduralMeshComponent* MeshComponent;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		UMaterialInstance* Material;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		int NodeMeshesRenderedPerFrame;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		int GrowingNodeMeshesRenderedPerFrame;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		float MeshGrowthRate;
+
+	UPROPERTY(Category = "Mesh", EditAnywhere)
+		float levelOfDetail;
+
+	//Environment
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		bool useLight;
+	
+	UPROPERTY(Category = "Environment", EditAnywhere)
+		float MaximumAngleOfLightRotation;
+
+	//Attributes
+	UPROPERTY(Category = "Attributes", EditAnywhere)
+		float crownRadius;
+
+	UPROPERTY(Category = "Attributes", EditAnywhere)
+		float trunkHeight;
+
+	UPROPERTY(Category = "Attributes", EditAnywhere)
 		float TimeOfGrowth;
 
-	UPROPERTY(EditAnywhere)
-		float RateOfGrowth;
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	TArray<AActor*> branches;
+
+	//Functions
+	void ApplyEnvironment();
+	void CalculateNodeMeshVerticesAndUV(float radius, FRotator rotation, FVector translation, TArray<FVector> &vertices, TArray<FVector2D> &uvs);
+
+	//Environment variables
+	FVector windOffset;
+	FRotator lightRotation;
+	float RateOfGrowth;
+
+	//Mesh Variables
+	int renderedNodeMeshes;
+	int newBranchesGenerated;
+
 };

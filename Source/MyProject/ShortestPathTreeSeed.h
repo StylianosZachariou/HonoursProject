@@ -1,41 +1,31 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "TreeSeed.h"
-#include "ProceduralMeshComponent.h"
 #include "GuidingVectorNode.h"
 #include "ShortestPathTreeSeed.generated.h"
 
+//Branch structure
 USTRUCT()
 struct FBranch
 {
 	GENERATED_BODY()
 
+	//All nodes in this branch
 	TArray<AGuidingVectorNode*> nodes;
 };
 
+//The Shortest Path algorithm tree
 UCLASS()
 class MYPROJECT_API AShortestPathTreeSeed : public ATreeSeed
 {
 	GENERATED_BODY()
 
+	//Constructor
 	AShortestPathTreeSeed();
 
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 public:
-	UPROPERTY(Category = "Mesh", VisibleAnywhere)
-		UProceduralMeshComponent* MeshComponent;
-
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		UMaterialInstance* Material;
-
-	UPROPERTY(Category = "myCategory", VisibleAnywhere, BlueprintReadWrite)
-		USceneComponent* SeedSceneComponent;
-
+	//Attributes
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<AGuidingVectorNode> GuidingVectorNodeToSpawn;
 
@@ -45,51 +35,44 @@ public:
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		int NumberOfEndpoints;
 
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		float MeshGrowthRate = 3.52;
-
-	UPROPERTY(Category = "Mesh", EditAnywhere)
-		float levelOfDetail = 15;
-
-	UPROPERTY(Category = "Environment", EditAnywhere)
-		bool useLight = false;
-
-	UPROPERTY(Category = "Environment", EditAnywhere)
-		float MaximumAngleOfLightRotation = 15;
-
-
 protected:
-	// Called when the game starts or when spawned
+
+	//Functions
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 private:
 
-	void ApplyEnvironment();
-	void GrowBranches(float DeltaTime);
+	//Functions
 	void ResetAStar();
 	bool StepAStarAlgorithm();
+
+	//Nodes
 	void SpawnAllGuidingVectors();
-	void SetParentsGuidingVectors();
 	void SpawnGuidingVector(FVector location);
+	void SetParentsGuidingVectors();
 	void ChooseEndpoints();
 	void CreateTrunk();
-	void CreateMesh();
-	void GrowTrunk(float DeltaTime);
-	void CreateSphereMesh(AGuidingVectorNode* node, float radius);
 
+	//Mesh
+	void GrowBranches(float DeltaTime);
+	void GrowTrunk(float DeltaTime);
+	void CreateMesh();
+	void CreateSphereMesh(AGuidingVectorNode* node);
+
+	//General Variables
+	FBranch* trunk;
+	bool trunkBuild;
+
+	//Mesh
+	TArray<AGuidingVectorNode*> finalTreeNodeActors;
+	TArray<FBranch*> growingTreeNodes;
+	int trunkNodesGenerated;
+	int growingBranchesGenerated;
+
+	//A Star Arrays
 	TArray<AGuidingVectorNode*> guidingVectorNodes;
 	TArray<AGuidingVectorNode*> visitedVectorNodes;
 	TArray<AGuidingVectorNode*> unvisitedVectorNodes;
 	TArray<int> endPointIndexes;
-
-	TArray<AGuidingVectorNode*> finalTreeNodeActors;
-	TArray<FBranch*> growingTreeNodes;
-	FBranch* trunk;
-	int trunkNodesGenerated = 0;
-
-	float crownRadius=0;
-	float trunkHeight=0;
-	FVector windOffset=FVector::Zero();
-	FRotator lightRotation = FRotator::ZeroRotator;
-	bool trunkBuild = false;
 };

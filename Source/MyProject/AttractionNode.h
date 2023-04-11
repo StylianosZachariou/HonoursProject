@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,21 +5,26 @@
 #include "GameFramework/Actor.h"
 #include "AttractionNode.generated.h"
 
+//Attraction Points used in the space colonization algorithm
 UCLASS()
 class MYPROJECT_API AAttractionNode : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+
+	//Constructor
 	AAttractionNode();
 
+	//Component Declarations
 	UPROPERTY(VisibleAnywhere)
 		USceneComponent* SceneComponent;
 
 	UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;
-
-	UPROPERTY(VisibleAnywhere)
 		UCapsuleComponent* collider;
+
+	///////////////// DEMONSTRATION PURPOSES /////////////////
+/*	UPROPERTY(VisibleAnywhere)
+		UStaticMeshComponent* StaticMeshComponent;*/
+	/////////////////////////////////////////////////////////
 };
