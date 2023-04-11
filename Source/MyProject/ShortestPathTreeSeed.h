@@ -69,7 +69,6 @@ private:
 	TArray<FBranch*> growingTreeNodes;
 	int trunkNodesGenerated;
 	int growingBranchesGenerated;
-	int newBranchesGenerated;
 
 	//A Star Arrays
 	TArray<AGuidingVectorNode*> guidingVectorNodes;

@@ -6,8 +6,7 @@ AShortestPathTreeSeed::AShortestPathTreeSeed():
 trunkBuild(false),
 trunkNodesGenerated(0),
 NumberOfEndpoints(70),
-growingBranchesGenerated(0),
-newBranchesGenerated(0)
+growingBranchesGenerated(0)
 {
 	//Component Initializations
 	SeedSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));

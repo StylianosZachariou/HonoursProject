@@ -69,4 +69,6 @@ protected:
 
 	//Mesh Variables
 	int renderedNodeMeshes;
+	int newBranchesGenerated;
+
 };

@@ -14,7 +14,8 @@ crownRadius(400),
 trunkHeight(150),
 renderedNodeMeshes(0),
 windOffset(FVector::Zero()),
-lightRotation(FRotator::ZeroRotator)
+lightRotation(FRotator::ZeroRotator),
+newBranchesGenerated(0)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }

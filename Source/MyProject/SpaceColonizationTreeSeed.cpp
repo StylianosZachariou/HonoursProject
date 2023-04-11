@@ -52,20 +52,27 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 		}
 		else
 		{
-			//If there are no growing nodes
-			if (growingNodeQueue.Num() == 0)
+			if (newBranchesGenerated <= 0)
 			{
-				//Queue growing nodes
-				QueueNewTreeNodes();
-			}
-			else
-			{
-				//Continue branch growth
-				GrowBranches(DeltaTime);
+				//If there are no growing nodes
+				if (growingNodeQueue.Num() == 0)
+				{
+					//Queue growing nodes
+					QueueNewTreeNodes();
+				}
+				else
+				{
+					//Continue branch growth
+					GrowBranches(DeltaTime);
+				}
 			}
 		}
-		//Update Mesh
-		CreateMesh();
+
+		if (newBranchesGenerated > 0)
+		{
+			//Update Mesh
+			CreateMesh();
+		}
 	}
 }
 
@@ -152,19 +159,23 @@ void ASpaceColonizationTreeSeed::CreateNewNodes()
 //Spawn one new node
 void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 {
-	FVector position;
+	FVector newNodePosition;
+	FVector previousNodePosition;
+
 	//If parent has a next node
 	if (parentNode)
 	{
-		position = *parentNode->GetNextTreeNodePosition();
+		newNodePosition = *parentNode->GetNextTreeNodePosition();
+		previousNodePosition = parentNode->GetActorLocation();
 	}
 	else
 	{
-		position = GetActorLocation();
+		newNodePosition = GetActorLocation();
+		previousNodePosition = GetActorLocation();
 	}
 
 	//Spawn new tree node 
-	ATreeNode* newTreeNode = GetWorld()->SpawnActor<ATreeNode>(TreeNodeToSpawn, position, FRotator(0, 0, 0));
+	ATreeNode* newTreeNode = GetWorld()->SpawnActor<ATreeNode>(TreeNodeToSpawn, newNodePosition, FRotator(0, 0, 0));
 
 	if (newTreeNode)
 	{
@@ -172,7 +183,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 		if (GrowingWithDirection)
 		{
 			//Calculate direction to go up (for trunk)
-			newTreeNode->CalculateCurrentDirection(position + FVector::DownVector);
+			newTreeNode->CalculateCurrentDirection(newNodePosition + FVector::DownVector);
 
 			//If node has attraction influences 
 			if (newTreeNode->GetHasAttractionInfluences())
@@ -184,7 +195,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 		else
 		{
 			//Calculate direction using parent node's location
-			newTreeNode->CalculateCurrentDirection(position);
+			newTreeNode->CalculateCurrentDirection(previousNodePosition);
 		}
 
 		//Calculate next node position
@@ -200,7 +211,6 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 
 			//Parent node reset
 			parentNode->ResetNextTreeNodePosition();
-			parentNode->IncrementChildCount();
 		}
 	}
 }
@@ -211,13 +221,6 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 //Create Mesh for all grown branches
 void ASpaceColonizationTreeSeed::CreateMesh()
 {
-	//If all nodes are rendered
-	if (renderedNodeMeshes >= nodes.Num())
-	{
-		//Start from the beginning
-		renderedNodeMeshes = 0;
-	}
-
 	//Vertex and UV arrays
 	TArray<FVector> vertices;
 	TArray<FVector2D> uvs;
@@ -227,8 +230,22 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
 
 	//For the required nodes to render
-	for (int i = renderedNodeMeshes; i <= NodeMeshesRenderedPerFrame + renderedNodeMeshes && i < nodes.Num(); i++)
+	for (int i = nodes.Num() - 1 - renderedNodeMeshes; i >= nodes.Num() - 1 - NodeMeshesRenderedPerFrame - renderedNodeMeshes && i >= 0; i--)
 	{
+
+		//Delete growing mesh section
+		if (i > nodes.Num() - 1 - newBranchesGenerated)
+		{
+			int currentMeshSection = nodes[i]->GetMeshSectionIndex();
+			//If this node was rendered before
+			if (currentMeshSection >= 0)
+			{
+				//Clear previous mesh section
+				MeshComponent->ClearMeshSection(currentMeshSection);
+				nodes[i]->SetMeshSectionIndex(-1);
+			}
+		}
+
 		//If this node has a parent
 		if (nodes[i]->GetParent())
 		{
@@ -276,15 +293,23 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 			vertices.Empty();
 			uvs.Empty();
 		}
-		renderedNodeMeshes++;
 	}
-//	renderedNodeMeshes += NodeMeshesRenderedPerFrame;
+
+	renderedNodeMeshes += NodeMeshesRenderedPerFrame;
+
+	//If all nodes are rendered
+	if (renderedNodeMeshes >= nodes.Num())
+	{
+		//Start from the beginning
+		renderedNodeMeshes = 0;
+		newBranchesGenerated = 0;
+	}
+
 }
 
 //Slowly grow branches' mesh
 void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 {
-	int maxGrowingCount = 2;
 	bool allGrown = true;
 
 	//Mesh Triangle Indices
@@ -296,16 +321,23 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 	TArray<FVector2D> uvs;
 
 	//For some of the growing nodes (depending on max count)
-	for (int i = 0; i<growingNodeQueue.Num() && i <maxGrowingCount; i++)
+	for (int i = 0; i < growingNodeQueue.Num() && i <= GrowingNodeMeshesRenderedPerFrame; i++)
 	{
 		//Its not all grown
 		allGrown = false;
-		if (ensure(growingNodeQueue[i]))
-		{
-			//If this node has a parent
-			if (growingNodeQueue[i]->GetParent())
-			{
 
+		//If this node has a parent
+		if (growingNodeQueue[i]->GetParent())
+		{
+			//Increase Timer
+			growingNodeQueue[i]->AddToGrowingTimer(DeltaTime);
+
+			//Calculate progress of branch using timer
+			float currentProgress = BranchLength * growingNodeQueue[i]->GetGrowingTimer() / (1 / RateOfGrowth);
+
+			//If the progress is less than the branch length
+			if (currentProgress < BranchLength)
+			{
 				int currentMeshSection = growingNodeQueue[i]->GetMeshSectionIndex();
 
 				//If this node was rendered before
@@ -321,65 +353,53 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 					growingNodeQueue[i]->SetMeshSectionIndex(currentMeshSection);
 				}
 
-				//Increase Timer
-				growingNodeQueue[i]->AddToGrowingTimer(DeltaTime);
+				//Calculate radius of this node based on children
+				float radius = pow(growingNodeQueue[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 
-				//Calculate progress of branch using timer
-				float currentProgress = BranchLength * growingNodeQueue[i]->GetGrowingTimer() / (1 / RateOfGrowth);
+				//Generating this node's vertices and UVs
+				FVector translationVector = (growingNodeQueue[i]->GetTransform().GetTranslation() - growingNodeQueue[i]->GetParent()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
+				CalculateNodeMeshVerticesAndUV(radius,
+					growingNodeQueue[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0),
+					growingNodeQueue[i]->GetTransform().GetTranslation() - translationVector,
+					vertices,
+					uvs);
 
-				//If the progress is less than the branch length
-				if (currentProgress > BranchLength)
-				{
-					//Calculate radius of this node based on children
-					float radius = pow(growingNodeQueue[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+				//Calculate radius of parent node based on children
+				radius = pow(growingNodeQueue[i]->GetParent()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
 
-					//Generating this node's vertices and UVs
-					FVector translationVector = (growingNodeQueue[i]->GetTransform().GetTranslation() - growingNodeQueue[i]->GetParent()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
-					CalculateNodeMeshVerticesAndUV(radius,
-						growingNodeQueue[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0),
-						growingNodeQueue[i]->GetTransform().GetTranslation() - translationVector,
-						vertices,
-						uvs);
+				//Generating parent node's vertices and UVs
+				CalculateNodeMeshVerticesAndUV(radius,
+					growingNodeQueue[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0),
+					growingNodeQueue[i]->GetParent()->GetTransform().GetTranslation(),
+					vertices,
+					uvs);
 
-					//Calculate radius of parent node based on children
-					radius = pow(growingNodeQueue[i]->GetParent()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
+				//Set Material to section
+				MeshComponent->SetMaterial(currentMeshSection, Material);
 
-					//Generating parent node's vertices and UVs
-					CalculateNodeMeshVerticesAndUV(radius,
-						growingNodeQueue[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0),
-						growingNodeQueue[i]->GetParent()->GetTransform().GetTranslation(),
-						vertices,
-						uvs);
-					
-					//Set Material to section
-					MeshComponent->SetMaterial(currentMeshSection, Material);
+				//Create new mesh section
+				MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 
-					//Create new mesh section
-					MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
-
-					//Empty Arrays
-					vertices.Empty();
-					uvs.Empty();
-				}
-				else
-				{
-					//Reset Mesh Section
-					growingNodeQueue[i]->SetMeshSectionIndex(-1);
-
-					//Remove from growing nodes
-					nodes.Add(growingNodeQueue[i]);
-					growingNodeQueue.RemoveAt(i);
-				}
+				//Empty Arrays
+				vertices.Empty();
+				uvs.Empty();
 			}
 			else
 			{
-				//Reset Mesh Section
-				growingNodeQueue[i]->SetMeshSectionIndex(-1);
-
 				//Remove from growing nodes
+				growingNodeQueue[i]->IncrementChildCount();
 				nodes.Add(growingNodeQueue[i]);
 				growingNodeQueue.RemoveAt(i);
+				newBranchesGenerated++;
 			}
+		}
+		else
+		{
+			//Remove from growing nodes
+			growingNodeQueue[i]->IncrementChildCount();
+			nodes.Add(growingNodeQueue[i]);
+			growingNodeQueue.RemoveAt(i);
+			newBranchesGenerated++;
 		}
 	}
 
