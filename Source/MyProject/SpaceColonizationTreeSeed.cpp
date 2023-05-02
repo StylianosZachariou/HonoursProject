@@ -74,6 +74,10 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 			CreateMesh();
 		}
 	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Done bcs of time!"));
+	}
 }
 
 
@@ -406,6 +410,7 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 	//If tree is all grown
 	if(allGrown)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("All grown!"));
 		//Empty queue
 		growingNodeQueue.Empty();
 	}

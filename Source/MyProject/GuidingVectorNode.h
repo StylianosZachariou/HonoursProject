@@ -59,16 +59,11 @@ public:
 	void SetMeshSectionIndex(int index);
 
 	//Functions
-	void detectConnections();
+	void DetectConnections();
 	void CalculateFGScores(FVector endLocation);
 	void AddToGrowingTimer(float time);
 	void ResetInfo();
 	void IncrementChildrenCount();
-
-protected:
-
-	//Functions
-	virtual void BeginPlay() override;
 
 private:
 

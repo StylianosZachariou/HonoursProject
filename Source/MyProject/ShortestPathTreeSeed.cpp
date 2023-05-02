@@ -184,8 +184,12 @@ void AShortestPathTreeSeed::Tick(float DeltaTime)
 			//If a star is completed, reset
 			ResetAStar();
 		}
-	}	
-		//If the trunkk is built
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("Done"));
+	}
+		//If the trunk is built
 		if (trunkBuild)
 		{
 			//If new branches are complete
@@ -238,7 +242,7 @@ void AShortestPathTreeSeed::BeginPlay()
 	for (int j = 0; j < guidingVectorNodes.Num(); j++)
 	{
 		//Detect connections
-		guidingVectorNodes[j]->detectConnections();
+		guidingVectorNodes[j]->DetectConnections();
 	}
 
 	//Set parents to guiding vectors
@@ -284,8 +288,8 @@ void AShortestPathTreeSeed::CreateTrunk()
 	guidingVectorNodes[1]->SetEndpoint();
 	endPointIndexes.Add(1);
 
-	//Spawn 5 trunk nodes with rnadom offsets
-	for(int i =0; i<trunkHeight;i+=trunkHeight/5)
+	//Spaw trunk nodes with rnadom offsets
+	for(int i =0; i<trunkHeight;i+=trunkHeight/20)
 	{
 		FVector randomOffset = FMath::VRand()*10;
 		FVector spawnLocation = GetActorLocation() + randomOffset + FVector(0, 0, i);
@@ -354,6 +358,14 @@ void AShortestPathTreeSeed::SetParentsGuidingVectors()
 			}
 		}
 	}
+
+	for (int i = 0; i < guidingVectorNodes.Num(); i++)
+	{
+		if (guidingVectorNodes[i]->GetHasParent())
+		{
+			guidingVectorNodes[i]->SetParent(guidingVectorNodes[0]->GetActorLocation());
+		}
+	}
 }
 
 
@@ -362,7 +374,6 @@ void AShortestPathTreeSeed::SetParentsGuidingVectors()
 //Create Procedural Mesh
 void AShortestPathTreeSeed::CreateMesh()
 {
-	
 	//Vertex and UV arrays
 	TArray<FVector> vertices;
 	TArray<FVector2D> uvs;
@@ -374,23 +385,23 @@ void AShortestPathTreeSeed::CreateMesh()
 	//For the required nodes to render
 	for (int i = finalTreeNodeActors.Num() - 1 - renderedNodeMeshes; i >= finalTreeNodeActors.Num() - 1 - NodeMeshesRenderedPerFrame - renderedNodeMeshes && i >= 0; i--)
 	{
-
-		//Delete growing mesh section
-		if (i > finalTreeNodeActors.Num() - 1 - newBranchesGenerated)
-		{
-			int currentMeshSection = finalTreeNodeActors[i]->GetMeshSectionIndex();
-			//If this node was rendered before
-			if (currentMeshSection >= 0)
-			{
-				//Clear previous mesh section
-				MeshComponent->ClearMeshSection(currentMeshSection);
-				finalTreeNodeActors[i]->SetMeshSectionIndex(-1);
-			}
-		}
-
 		//If there is a next node in path
 		if (finalTreeNodeActors[i]->GetNext())
 		{
+			//Delete growing mesh section
+			if (i > finalTreeNodeActors.Num() - 1 - newBranchesGenerated)
+			{
+				int currentMeshSection = finalTreeNodeActors[i]->GetMeshSectionIndex();
+				//If this node was rendered before
+				if (currentMeshSection >= 0)
+				{
+					//Clear previous mesh section
+					MeshComponent->ClearMeshSection(currentMeshSection);
+					finalTreeNodeActors[i]->SetMeshSectionIndex(-1);
+				}
+			}
+
+
 			int currentMeshSection = finalTreeNodeActors[i]->GetMeshSectionIndex();
 			//If this node was rendered before
 			if (currentMeshSection >= 0)
@@ -652,9 +663,6 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 
 								break;
 							}
-
-							//Reset mesh index
-							//growingTreeNodes[i]->nodes[j]->SetMeshSectionIndex(-1);
 
 							//Increment node's Children count
 							growingTreeNodes[i]->nodes[j]->IncrementChildrenCount();

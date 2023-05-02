@@ -41,6 +41,9 @@ public:
 
 	//Environment
 	UPROPERTY(Category = "Environment", EditAnywhere)
+		bool applyEnvironment;
+
+	UPROPERTY(Category = "Environment", EditAnywhere)
 		bool useLight;
 	
 	UPROPERTY(Category = "Environment", EditAnywhere)
@@ -56,6 +59,8 @@ public:
 	UPROPERTY(Category = "Attributes", EditAnywhere)
 		float TimeOfGrowth;
 
+	UPROPERTY(Category = "Attributes", EditAnywhere)
+		float RateOfGrowth;
 protected:
 
 	//Functions
@@ -65,7 +70,6 @@ protected:
 	//Environment variables
 	FVector windOffset;
 	FRotator lightRotation;
-	float RateOfGrowth;
 
 	//Mesh Variables
 	int renderedNodeMeshes;
