@@ -130,8 +130,8 @@ void AGuidingVectorNode::SetParent(FVector location)
 		hasParent = true;
 
 		///////////////// DEMONSTRATION PURPOSES /////////////////
-		//StaticMeshComponent->SetStaticMesh(coneMesh);
-		//StaticMeshComponent->SetRelativeRotationExact(directionVector.ToOrientationRotator().Add(270,0,0));
+//		StaticMeshComponent->SetStaticMesh(coneMesh);
+//		StaticMeshComponent->SetRelativeRotationExact(directionVector.ToOrientationRotator().Add(270,0,0));
 		//////////////////////////////////////////////////////////
 	}
 }
@@ -228,8 +228,12 @@ void AGuidingVectorNode::DetectConnections()
 		{
 			AGuidingVectorNode* detectedGuidingVector = Cast<AGuidingVectorNode>(overlappingActors[i]);
 
-			//Add to connections
-			connections.Add(detectedGuidingVector);
+			//If its not an  end point
+			if (!detectedGuidingVector->isEndpoint)
+			{
+				//Add to connections
+				connections.Add(detectedGuidingVector);
+			}
 		}
 	}
 }

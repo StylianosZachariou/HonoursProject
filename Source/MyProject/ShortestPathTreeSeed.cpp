@@ -4,7 +4,7 @@
 //Constructor
 AShortestPathTreeSeed::AShortestPathTreeSeed():
 trunkBuild(false),
-trunkNodesGenerated(0),
+trunkGenerated(false),
 NumberOfEndpoints(70),
 growingBranchesGenerated(0)
 {
@@ -64,7 +64,7 @@ bool AShortestPathTreeSeed::StepAStarAlgorithm()
 		{
 			if (currentNode)
 			{
-				//Find the unvisited node with the list F score
+				//Find the unvisited node with the least F score
 				if (currentNode->GetFScore() >= unvisitedVectorNodes[i]->GetFScore())
 				{
 					//Choose that one as the current node
@@ -110,7 +110,7 @@ bool AShortestPathTreeSeed::StepAStarAlgorithm()
 				}				
 
 				//If there is no trunk yet
-				if (!trunk)
+				if (!trunkGenerated)
 				{
 					//This branch is the trunk
 					for(int i =0; i<newBranch->nodes.Num();i++)
@@ -125,16 +125,13 @@ bool AShortestPathTreeSeed::StepAStarAlgorithm()
 							newBranch->nodes[i]->SetNext(nullptr);
 						}
 					}
-					
-					trunk = newBranch;
-				}
-				else
-				{
-					//Add this branch to growing branches
-					growingTreeNodes.Add(newBranch);
+					trunkGenerated = true;
 				}
 
-				//The algorithm us complete
+				//Add this branch to growing branches
+				growingTreeNodes.Add(newBranch);
+
+				//The algorithm is complete
 				return true;
 			}
 
@@ -189,27 +186,18 @@ void AShortestPathTreeSeed::Tick(float DeltaTime)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("Done"));
 	}
-		//If the trunk is built
-		if (trunkBuild)
-		{
-			//If new branches are complete
-			if (newBranchesGenerated<=0)
-			{
-				GrowBranches(DeltaTime);
-			}
-		}
-		else
-		{
-			//Growing trunk
-			GrowTrunk(DeltaTime);
-		}
 
-		if (newBranchesGenerated>0)
-		{
-			//Update Mesh
-			CreateMesh();
-		}
-	
+	//If new branches are complete
+	if (newBranchesGenerated <= 0)
+	{
+		GrowBranches(DeltaTime);
+	}
+	else
+	{
+		//Update Mesh
+		CreateMesh();
+	}
+
 }
 
 //When the application begins
@@ -288,8 +276,8 @@ void AShortestPathTreeSeed::CreateTrunk()
 	guidingVectorNodes[1]->SetEndpoint();
 	endPointIndexes.Add(1);
 
-	//Spaw trunk nodes with rnadom offsets
-	for(int i =0; i<trunkHeight;i+=trunkHeight/20)
+	//Spawn trunk nodes with random offsets
+	for(int i =0; i<trunkHeight;i+=trunkHeight/(NumberOfGuidingVectors/150))
 	{
 		FVector randomOffset = FMath::VRand()*10;
 		FVector spawnLocation = GetActorLocation() + randomOffset + FVector(0, 0, i);
@@ -350,18 +338,13 @@ void AShortestPathTreeSeed::SetParentsGuidingVectors()
 		//If this guiding vector is not a parent
 		if (!guidingVectorNodes[i]->GetIsParent())
 		{
-			//If this vector has a parent
-			if (guidingVectorNodes[i]->GetHasParent())
-			{
-				//Set this as connections parent
-				guidingVectorNodes[i]->SetThisAsConnectionsParent();
-			}
+			guidingVectorNodes[i]->SetThisAsConnectionsParent();
 		}
 	}
 
 	for (int i = 0; i < guidingVectorNodes.Num(); i++)
 	{
-		if (guidingVectorNodes[i]->GetHasParent())
+		if (!guidingVectorNodes[i]->GetHasParent())
 		{
 			guidingVectorNodes[i]->SetParent(guidingVectorNodes[0]->GetActorLocation());
 		}
@@ -462,119 +445,6 @@ void AShortestPathTreeSeed::CreateMesh()
 
 }
 
-//Slowly grow trunk mesh
-void AShortestPathTreeSeed::GrowTrunk(float DeltaTime)
-{
-	//If the trunk nodes are generated
-	if (trunk)
-	{
-		//Vertex and UV arrays for procedural mesh
-		TArray<FVector> vertices;
-		TArray<FVector2D> uvs;
-
-		//Triangle indices
-		TArray<int32> triangles;
-		UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
-
-		//For all trunk nodes
-		for (int i = trunk->nodes.Num() - 1; i >= 0; i--)
-		{
-			//If the node is not already generated
-			if (finalTreeNodeActors.Find(trunk->nodes[i]) == INDEX_NONE)
-			{
-				//If there is a next node
-				if (trunk->nodes[i]->GetNext())
-				{
-					//Calculate the branch's length
-					float BranchLength = FVector::Dist(trunk->nodes[i]->GetActorLocation(), trunk->nodes[i]->GetNext()->GetActorLocation());
-
-					//Add to timer
-					trunk->nodes[i]->AddToGrowingTimer(DeltaTime);
-
-					//Calculate progress based on time
-					float currentProgress = BranchLength * trunk->nodes[i]->GetGrowingTimer() / (1 / RateOfGrowth);
-
-					//If the branch is not fully developed yet
-					if (currentProgress < BranchLength)
-					{
-						int currentMeshSection = trunk->nodes[i]->GetMeshSectionIndex();
-
-						//If this node's mesh was previously rendered
-						if (currentMeshSection >= 0)
-						{
-							//Clear the mesh section
-							MeshComponent->ClearMeshSection(currentMeshSection);
-						}
-						else
-						{
-							//Assign a new mesh section to the node
-							currentMeshSection = MeshComponent->GetNumSections();
-							trunk->nodes[i]->SetMeshSectionIndex(currentMeshSection);
-						}
-
-						//Calculate the next node's mesh radius based on children
-						float radius = pow(trunk->nodes[i]->GetNext()->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-						//Generate next node's mesh vertices
-						CalculateNodeMeshVerticesAndUV(radius,
-							trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0),
-							trunk->nodes[i]->GetNext()->GetTransform().GetTranslation(),
-							vertices,
-							uvs);
-
-						//Calculate this node;s mesh radius based on children
-						radius = pow(trunk->nodes[i]->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
-
-						//Generate this node's mesh vertices
-						FVector translation = trunk->nodes[i]->GetTransform().GetTranslation()-(trunk->nodes[i]->GetTransform().GetTranslation() - trunk->nodes[i]->GetNext()->GetTransform().GetTranslation()) * (BranchLength - currentProgress) / BranchLength;
-						CalculateNodeMeshVerticesAndUV(radius,
-							trunk->nodes[i]->GetCurrentDirection().ToOrientationRotator().Add(90, 0, 0),
-							translation,
-							vertices,
-							uvs);
-
-						//Set Material to Section
-						MeshComponent->SetMaterial(currentMeshSection, Material);
-
-						//Create the Mesh Section
-						MeshComponent->CreateMeshSection(currentMeshSection, vertices, triangles, TArray<FVector>(), uvs, TArray<FColor>(), TArray<FProcMeshTangent>(), false);
-
-						//Clear arrays
-						vertices.Empty();
-						uvs.Empty();
-
-						break;
-					}
-
-					//Reset node's mesh section
-					//trunk->nodes[i]->SetMeshSectionIndex(-1);
-
-					//Increment Children count
-					trunk->nodes[i]->IncrementChildrenCount();
-
-					//Add to the final mesh
-					finalTreeNodeActors.Add(trunk->nodes[i]);
-					trunkNodesGenerated++;
-					newBranchesGenerated++;
-				}
-				else
-				{
-					//Add to the final mesh
-					finalTreeNodeActors.Add(trunk->nodes[i]);
-					trunkNodesGenerated++;
-					newBranchesGenerated++;
-				}
-			}
-		}
-
-		//If all trunk meshes are generated
-		if (trunkNodesGenerated >= trunk->nodes.Num())
-		{
-			trunkBuild = true;
-		}
-	}
-}
-
 //Slowly grow branches mesh
 void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 {
@@ -586,7 +456,15 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 	TArray<int32> triangles;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
 
-	int currentGrownBranches = growingBranchesGenerated;
+	int currentGrownBranches;
+	if(!trunkBuild)
+	{
+		currentGrownBranches = 0;
+	}
+	else
+	{
+		currentGrownBranches = growingBranchesGenerated;
+	}
 
 	//For the required amount of grown branches growing branches
 	for (int i = currentGrownBranches; i < growingTreeNodes.Num() && i <= GrowingNodeMeshesRenderedPerFrame + currentGrownBranches; i++)
@@ -694,6 +572,15 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 				//Remove from growing node
 				growingTreeNodes[i]->nodes.RemoveAtSwap(j);
 			}
+		}
+
+		if (!trunkBuild)
+		{
+			if (growingTreeNodes[i]->nodes.IsEmpty())
+			{
+				trunkBuild = true;
+			}
+			break;
 		}
 	}
 }

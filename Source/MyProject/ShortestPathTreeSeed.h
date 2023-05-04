@@ -61,13 +61,12 @@ private:
 	void CreateSphereMesh(AGuidingVectorNode* node);
 
 	//General Variables
-	FBranch* trunk;
+	bool trunkGenerated;
 	bool trunkBuild;
 
 	//Mesh
 	TArray<AGuidingVectorNode*> finalTreeNodeActors;
 	TArray<FBranch*> growingTreeNodes;
-	int trunkNodesGenerated;
 	int growingBranchesGenerated;
 
 	//A Star Arrays

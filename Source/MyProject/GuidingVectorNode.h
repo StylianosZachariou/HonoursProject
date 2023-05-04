@@ -29,11 +29,11 @@ public:
 		UCapsuleComponent* collider;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
-/*	UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;
+//	UPROPERTY(VisibleAnywhere)
+//		UStaticMeshComponent* StaticMeshComponent;
 
-	UPROPERTY(EditAnywhere)
-		UStaticMesh* coneMesh;*/
+//	UPROPERTY(EditAnywhere)
+//		UStaticMesh* coneMesh;
 	/////////////////////////////////////////////////////////
 
 	//Getters
@@ -91,6 +91,6 @@ private:
 	int numOfChildren;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
-	//UMaterial* endPointMaterial;
+//	UMaterial* endPointMaterial;
 	/////////////////////////////////////////////////////////
 };
