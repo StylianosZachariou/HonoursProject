@@ -130,8 +130,8 @@ void AGuidingVectorNode::SetParent(FVector location)
 		hasParent = true;
 
 		///////////////// DEMONSTRATION PURPOSES /////////////////
-		//StaticMeshComponent->SetStaticMesh(coneMesh);
-		//StaticMeshComponent->SetRelativeRotationExact(directionVector.ToOrientationRotator().Add(270,0,0));
+//		StaticMeshComponent->SetStaticMesh(coneMesh);
+//		StaticMeshComponent->SetRelativeRotationExact(directionVector.ToOrientationRotator().Add(270,0,0));
 		//////////////////////////////////////////////////////////
 	}
 }
@@ -209,10 +209,16 @@ void AGuidingVectorNode::CalculateFGScores(FVector endLocation)
 }
 
 //Detect All connections
-void AGuidingVectorNode::detectConnections()
+void AGuidingVectorNode::DetectConnections()
 {
 	TArray<AActor*> overlappingActors;
-	collider->GetOverlappingActors(overlappingActors,AGuidingVectorNode::StaticClass());
+	SphereComponent->GetOverlappingActors(overlappingActors, AGuidingVectorNode::StaticClass());;
+
+	while(overlappingActors.Num()<=0)
+	{
+		SphereComponent->SetSphereRadius(SphereComponent->GetScaledSphereRadius() + 1);
+		SphereComponent->GetOverlappingActors(overlappingActors, AGuidingVectorNode::StaticClass());
+	}
 
 	//For all overlapping guiding vectors
 	for(int i =0; i<overlappingActors.Num();i++)
@@ -269,11 +275,5 @@ void AGuidingVectorNode::SetThisAsConnectionsParent()
 		connections[i]->SetParent(GetActorLocation());
 		isParent = true;
 	}
-}
-
-//When this node firstly spawns
-void AGuidingVectorNode::BeginPlay()
-{
-	Super::BeginPlay();
 }
 

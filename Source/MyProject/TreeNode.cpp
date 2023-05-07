@@ -10,6 +10,8 @@ MaxDensity(25),
 meshSectionIndex(-1),
 growingTimer(0),
 numOfChildren(0),
+RandomnessFactor(0.5),
+MaxNumberOfChildren(2),
 parent(nullptr)
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -63,7 +65,7 @@ void ATreeNode::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor*
 		//If its an attraction node
 		if (AAttractionNode* detectedAttractionNode = Cast<AAttractionNode>(OtherActor))
 		{
-			//Add to attraction influeces
+			//Add to attraction influences
 			attractionInfluences.Add(OtherActor);
 			if (nodebranchLength > 0)
 			{
@@ -77,7 +79,7 @@ void ATreeNode::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor*
 			detractionInfluences.Add(OtherActor);
 			if (nodebranchLength > 0)
 			{
-				//Calclate next position
+				//Calculate next position
 				CalculateNextTreeNodePosition(false, nodebranchLength);
 			}
 		}
@@ -199,7 +201,7 @@ void ATreeNode::AddToGrowingTimer(float time)
 void ATreeNode::CalculateNextTreeNodePosition(bool useDirection, float branchLength)
 {
 	//If this node has less than 3 children 
-	if (numOfChildren <= 2)
+	if (numOfChildren <= MaxNumberOfChildren)
 	{
 		//If it has influences
 		if (!useDirection)
@@ -211,7 +213,7 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection, float branchLen
 				if (attractionInfluences.Num() > 0)
 				{
 					//Calculating attraction vector
-					FVector attractionVector;
+					FVector attractionVector = FVector::Zero();
 
 					//For all attraction influences
 					for (auto vector : attractionInfluences)
@@ -224,22 +226,19 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection, float branchLen
 						attractionVector += directionVector;
 					}
 
-					//Add random vector
-					attractionVector += FMath::VRand();
-
 					//Add current direction
 					attractionVector += currentDirection/5;
 
 					attractionVector.Normalize();
 
 					//Calculating the detraction vector
-					FVector detractionVector;
+					FVector detractionVector = FVector::Zero();
 
 					//For all detraction influences
 					for (auto dvector : detractionInfluences)
 					{
 						//Calculate direction vector between this node and detraction node
-						FVector directionVector = GetActorLocation() - dvector->GetActorLocation();
+						FVector directionVector =  dvector->GetActorLocation() - GetActorLocation();
 						directionVector.Normalize();
 
 						//Add it to detraction vector
@@ -251,7 +250,7 @@ void ATreeNode::CalculateNextTreeNodePosition(bool useDirection, float branchLen
 					FVector totalVector;
 
 					//Adding attraction vector and detraction vector. (The more detraction influences the more influence detraction will have)
-					totalVector += attractionVector + detractionVector * detractionInfluences.Num();
+					totalVector = attractionVector - detractionVector;
 					totalVector.Normalize();
 
 					//Calculating the new spawn location
@@ -286,7 +285,7 @@ void ATreeNode::CalculateCurrentDirection(FVector parentNodeLocation)
 	currentDirection = GetActorLocation() - parentNodeLocation;
 	FVector randomVector = FMath::VRand();
 	randomVector.Z = FMath::Abs(randomVector.Z);
-	currentDirection += randomVector / 2;
+	currentDirection += randomVector / (1/RandomnessFactor);
 	currentDirection.Normalize();
 }
 

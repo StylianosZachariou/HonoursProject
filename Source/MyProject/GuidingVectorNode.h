@@ -29,11 +29,11 @@ public:
 		UCapsuleComponent* collider;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
-/*	UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;
+//	UPROPERTY(VisibleAnywhere)
+//		UStaticMeshComponent* StaticMeshComponent;
 
-	UPROPERTY(EditAnywhere)
-		UStaticMesh* coneMesh;*/
+//	UPROPERTY(EditAnywhere)
+//		UStaticMesh* coneMesh;
 	/////////////////////////////////////////////////////////
 
 	//Getters
@@ -59,16 +59,11 @@ public:
 	void SetMeshSectionIndex(int index);
 
 	//Functions
-	void detectConnections();
+	void DetectConnections();
 	void CalculateFGScores(FVector endLocation);
 	void AddToGrowingTimer(float time);
 	void ResetInfo();
 	void IncrementChildrenCount();
-
-protected:
-
-	//Functions
-	virtual void BeginPlay() override;
 
 private:
 
@@ -96,6 +91,6 @@ private:
 	int numOfChildren;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
-	//UMaterial* endPointMaterial;
+//	UMaterial* endPointMaterial;
 	/////////////////////////////////////////////////////////
 };

@@ -38,8 +38,18 @@ void ASpaceColonizationTreeSeed::BeginPlay()
 //Called every frame
 void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 {
+	if (times.Num() <= 2000)
+	{
+		if (GetWorld()->GetTimeSeconds() > currentTime)
+		{
+			currentTime = GetWorld()->GetTimeSeconds();
+			FString TITITIME = FString::SanitizeFloat(DeltaTime, 10);
+			times.Add(TITITIME);
+		}
+	}
+	
 	Super::Tick(DeltaTime);
-
+	
 	//If the tree is still growing
 	TimeOfGrowth -= DeltaTime;
 	if (TimeOfGrowth >= 0)
@@ -73,6 +83,18 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 			//Update Mesh
 			CreateMesh();
 		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Done bcs of time!"));
+	}
+
+	if (times.Num() > 2000)
+	{
+		FString file = FPaths::ProjectConfigDir();
+		file.Append(TEXT("ScaCalc.txt"));
+		FFileHelper::SaveStringArrayToFile(times, *file);
+		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, TEXT("WRTTEN"));
 	}
 }
 
@@ -312,6 +334,8 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 {
 	bool allGrown = true;
 
+
+
 	//Mesh Triangle Indices
 	TArray<int32> triangles;
 	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, true, triangles);
@@ -406,6 +430,7 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 	//If tree is all grown
 	if(allGrown)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("All grown!"));
 		//Empty queue
 		growingNodeQueue.Empty();
 	}
