@@ -74,4 +74,8 @@ private:
 	TArray<AGuidingVectorNode*> visitedVectorNodes;
 	TArray<AGuidingVectorNode*> unvisitedVectorNodes;
 	TArray<int> endPointIndexes;
+
+	///////////////////////////DELETE THIS AFETER
+	float currentTime;
+	TArray<FString> times;
 };

@@ -62,7 +62,7 @@ void ATreeSeed::ApplyEnvironment()
 		}
 
 		//Rate of growth factors
-/*		RateOfGrowth = 1;
+		RateOfGrowth = 1;
 
 		//Calculate effect of moisture
 		float moisturePercentage = environment->GetMoisture();
@@ -98,7 +98,7 @@ void ATreeSeed::ApplyEnvironment()
 		}
 
 		//If rate of growth is less than 0, set it to 0
-		RateOfGrowth = FMath::Max(0, RateOfGrowth);*/
+		RateOfGrowth = FMath::Max(0, RateOfGrowth);
 	}
 }
 
