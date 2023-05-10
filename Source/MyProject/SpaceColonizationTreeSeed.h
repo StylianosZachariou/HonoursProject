@@ -66,8 +66,4 @@ private:
 	TArray<ATreeNode*> nodes;
 	TArray<ATreeNode*> newNodeQueue;
 	TArray<ATreeNode*> growingNodeQueue;
-
-	///////////////////////////DELETE THIS AFETER
-	float currentTime;
-	TArray<FString> times;
 };

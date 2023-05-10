@@ -38,16 +38,6 @@ void ASpaceColonizationTreeSeed::BeginPlay()
 //Called every frame
 void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 {
-	if (times.Num() <= 2000)
-	{
-		if (GetWorld()->GetTimeSeconds() > currentTime)
-		{
-			currentTime = GetWorld()->GetTimeSeconds();
-			FString TITITIME = FString::SanitizeFloat(DeltaTime, 10);
-			times.Add(TITITIME);
-		}
-	}
-	
 	Super::Tick(DeltaTime);
 	
 	//If the tree is still growing
@@ -87,14 +77,6 @@ void ASpaceColonizationTreeSeed::Tick(float DeltaTime)
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Done bcs of time!"));
-	}
-
-	if (times.Num() > 2000)
-	{
-		FString file = FPaths::ProjectConfigDir();
-		file.Append(TEXT("ScaCalc.txt"));
-		FFileHelper::SaveStringArrayToFile(times, *file);
-		GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, TEXT("WRTTEN"));
 	}
 }
 
