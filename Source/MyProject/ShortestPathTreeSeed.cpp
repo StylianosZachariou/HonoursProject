@@ -214,7 +214,7 @@ void AShortestPathTreeSeed::BeginPlay()
 	
 	FTransform translations = FTransform::Identity;
 	translations.AddToTranslation(GetActorLocation());
-	translations.AddToTranslation(FVector(0, 0, trunkHeight));
+	translations.AddToTranslation(FVector(0, 0, TrunkHeight));
 	centreGuidingVectorPosition = translations.TransformPosition(centreGuidingVectorPosition);
 
 	//Spawn Guiding Vector
@@ -278,7 +278,7 @@ void AShortestPathTreeSeed::CreateTrunk()
 	endPointIndexes.Add(1);
 
 	//Spawn trunk nodes with random offsets
-	for(int i =0; i<trunkHeight;i+=trunkHeight/(NumberOfGuidingVectors/150))
+	for(int i =0; i<TrunkHeight;i+=TrunkHeight/(NumberOfGuidingVectors/150))
 	{
 		FVector randomOffset = FMath::VRand()*10;
 		FVector spawnLocation = GetActorLocation() + randomOffset + FVector(0, 0, i);
@@ -294,12 +294,12 @@ void AShortestPathTreeSeed::SpawnAllGuidingVectors()
 	{
 		//Get a random position within a radius
 		FVector pos;
-		pos.X = FMath::FRandRange(-crownRadius, crownRadius);
-		pos.Y = FMath::FRandRange(-crownRadius, crownRadius);
-		pos.Z = FMath::FRandRange(-crownRadius, crownRadius);
+		pos.X = FMath::FRandRange(-CrownRadius, CrownRadius);
+		pos.Y = FMath::FRandRange(-CrownRadius, CrownRadius);
+		pos.Z = FMath::FRandRange(-CrownRadius, CrownRadius);
 
 		//If the position is in the sphere
-		if (sqrt((pos.X * pos.X) + (pos.Y * pos.Y) + (pos.Z * pos.Z)) <= crownRadius)
+		if (sqrt((pos.X * pos.X) + (pos.Y * pos.Y) + (pos.Z * pos.Z)) <= CrownRadius)
 		{
 			//If the position is in the top semi-sphere
 			if (pos.Z >= 0)
@@ -320,7 +320,7 @@ void AShortestPathTreeSeed::SpawnAllGuidingVectors()
 				//Wind offset and trunk height translation
 				FTransform windAndTrunkTF = FTransform::Identity;
 				windAndTrunkTF.AddToTranslation(GetActorLocation() + windOffset);
-				windAndTrunkTF.AddToTranslation(FVector(0, 0, trunkHeight));
+				windAndTrunkTF.AddToTranslation(FVector(0, 0, TrunkHeight));
 				guidingVectorPosition = windAndTrunkTF.TransformPosition(guidingVectorPosition);
 
 				//Spawn Guiding Vector
@@ -364,7 +364,7 @@ void AShortestPathTreeSeed::CreateMesh()
 
 	//Triangle indices
 	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, LevelOfDetail + 1, false, triangles);
 
 	//For the required nodes to render
 	for (int i = finalTreeNodeActors.Num() - 1 - renderedNodeMeshes; i >= finalTreeNodeActors.Num() - 1 - NodeMeshesRenderedPerFrame - renderedNodeMeshes && i >= 0; i--)
@@ -455,7 +455,7 @@ void AShortestPathTreeSeed::GrowBranches(float DeltaTime)
 
 	//Triangle indices
 	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, LevelOfDetail + 1, false, triangles);
 
 	int currentGrownBranches;
 	if(!trunkBuild)
@@ -595,7 +595,7 @@ void AShortestPathTreeSeed::CreateSphereMesh(AGuidingVectorNode* node)
 
 	//Triangle indices
 	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(levelOfDetail + 1, levelOfDetail + 1, true, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(LevelOfDetail + 1, LevelOfDetail + 1, true, triangles);
 
 	//Calculate sphere radius based on node's children count
 	float radius = pow(node->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
@@ -616,22 +616,22 @@ void AShortestPathTreeSeed::CreateSphereMesh(AGuidingVectorNode* node)
 	}
 
 	// Create Sphere
-	for (int m = levelOfDetail + 1; m > 0; m--)
+	for (int m = LevelOfDetail + 1; m > 0; m--)
 	{
-		for (int n = 0; n < levelOfDetail + 1; n++)
+		for (int n = 0; n < LevelOfDetail + 1; n++)
 		{
 			//Calculate sphere vertex positions
 			FVector pos = node->GetActorLocation();
-			pos.X = FMath::Sin(PI * m / levelOfDetail) * FMath::Cos(2 * PI * n / levelOfDetail) * (radius);
-			pos.Y = FMath::Sin(PI * m / levelOfDetail) * FMath::Sin(2 * PI * n / levelOfDetail) * (radius);
-			pos.Z = FMath::Cos(PI * m / levelOfDetail) * (radius);
+			pos.X = FMath::Sin(PI * m / LevelOfDetail) * FMath::Cos(2 * PI * n / LevelOfDetail) * (radius);
+			pos.Y = FMath::Sin(PI * m / LevelOfDetail) * FMath::Sin(2 * PI * n / LevelOfDetail) * (radius);
+			pos.Z = FMath::Cos(PI * m / LevelOfDetail) * (radius);
 			pos = node->GetActorTransform().TransformPosition(pos);
 			pos -= GetActorLocation();
 
 			vertices.Add(pos);
 
 			//Calculate UV positions
-			uvs.Add(FVector2D(m / levelOfDetail, n / levelOfDetail));
+			uvs.Add(FVector2D(m / LevelOfDetail, n / LevelOfDetail));
 		}
 	}
 

@@ -9,8 +9,8 @@ AAttractionNode::AAttractionNode()
 	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	SetRootComponent(SceneComponent);
 
-	collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collider"));
-	collider->SetupAttachment(RootComponent);
+	Collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collider"));
+	Collider->SetupAttachment(RootComponent);
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
 /*	auto Mesh = ConstructorHelpers::FObjectFinder<UStaticMesh>(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_Sphere.Shape_Sphere'"));

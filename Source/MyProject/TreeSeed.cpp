@@ -8,10 +8,10 @@ RateOfGrowth(1),
 NodeMeshesRenderedPerFrame(4),
 GrowingNodeMeshesRenderedPerFrame(4),
 MeshGrowthRate(3),
-levelOfDetail(15),
+LevelOfDetail(15),
 MaximumAngleOfLightRotation(15),
-crownRadius(400),
-trunkHeight(150),
+CrownRadius(400),
+TrunkHeight(150),
 renderedNodeMeshes(0),
 windOffset(FVector::Zero()),
 lightRotation(FRotator::ZeroRotator),
@@ -23,14 +23,14 @@ newBranchesGenerated(0)
 //Environment Application
 void ATreeSeed::ApplyEnvironment()
 {
-	if (applyEnvironment)
+	if (UseEnvironment)
 	{
 		//Get the Environment
 		AEnvironmentSettings* environment = Cast<AEnvironmentSettings>(GetWorldSettings());
 
 		//Calculate crown starting position using trunk height
 		FVector crownStartPosition = GetActorLocation();
-		crownStartPosition.Z += trunkHeight;
+		crownStartPosition.Z += TrunkHeight;
 
 		//Wind
 
@@ -45,11 +45,11 @@ void ATreeSeed::ApplyEnvironment()
 			//Calculate wind offset using direction
 			FVector direction = environment->GetWindDirection();
 			direction.Normalize();
-			windOffset = direction * (windPower * crownRadius / maxWindPower);
+			windOffset = direction * (windPower * CrownRadius / maxWindPower);
 		}
 
 		//Light
-		if (useLight)
+		if (UseLight)
 		{
 			//Calculate direction of growth towards light
 			FVector lightGrowthDirection = environment->GetLightPosition() - crownStartPosition;
@@ -62,7 +62,7 @@ void ATreeSeed::ApplyEnvironment()
 		}
 
 		//Rate of growth factors
-		RateOfGrowth = 1;
+//		RateOfGrowth = 1;
 
 		//Calculate effect of moisture
 		float moisturePercentage = environment->GetMoisture();
@@ -105,7 +105,7 @@ void ATreeSeed::ApplyEnvironment()
 //Mesh Calculations
 void ATreeSeed::CalculateNodeMeshVerticesAndUV(float radius, FRotator rotation, FVector translation, TArray<FVector>& vertices, TArray<FVector2D>& uvs)
 {
-	for (int i = 0; i < levelOfDetail+1; i++)
+	for (int i = 0; i < LevelOfDetail+1; i++)
 	{
 		//Rotation perpendicular to nodes direction
 		FTransform rotationTF = FTransform::Identity;
@@ -116,7 +116,7 @@ void ATreeSeed::CalculateNodeMeshVerticesAndUV(float radius, FRotator rotation, 
 		translationTF.AddToTranslation(translation);
 
 		// radial angle of the vertex
-		float alpha = ((float)i / levelOfDetail) * PI * 2.f;
+		float alpha = ((float)i / LevelOfDetail) * PI * 2.f;
 
 		//Translation based on radial angle
 		FTransform radialTranslationTF = FTransform::Identity;
@@ -131,7 +131,7 @@ void ATreeSeed::CalculateNodeMeshVerticesAndUV(float radius, FRotator rotation, 
 		pos -= GetActorLocation();
 
 		//Calculate vertex UV
-		FVector2D uv = FVector2D(i / levelOfDetail, 0);
+		FVector2D uv = FVector2D(i / LevelOfDetail, 0);
 
 		//Add to arrays
 		vertices.Add(pos);

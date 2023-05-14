@@ -37,24 +37,24 @@ public:
 		float MeshGrowthRate;
 
 	UPROPERTY(Category = "Mesh", EditAnywhere)
-		float levelOfDetail;
+		float LevelOfDetail;
 
 	//Environment
 	UPROPERTY(Category = "Environment", EditAnywhere)
-		bool applyEnvironment;
+		bool UseEnvironment;
 
 	UPROPERTY(Category = "Environment", EditAnywhere)
-		bool useLight;
+		bool UseLight;
 	
 	UPROPERTY(Category = "Environment", EditAnywhere)
 		float MaximumAngleOfLightRotation;
 
 	//Attributes
 	UPROPERTY(Category = "Attributes", EditAnywhere)
-		float crownRadius;
+		float CrownRadius;
 
 	UPROPERTY(Category = "Attributes", EditAnywhere)
-		float trunkHeight;
+		float TrunkHeight;
 
 	UPROPERTY(Category = "Attributes", EditAnywhere)
 		float TimeOfGrowth;

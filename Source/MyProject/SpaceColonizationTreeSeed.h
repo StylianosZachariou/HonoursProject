@@ -59,7 +59,7 @@ private:
 	void CreateSphereMesh(ATreeNode* node);
 
 	//General Variables
-	bool GrowingWithDirection;
+	bool growingWithDirection;
 
 	//Nodes
 	TArray<AAttractionNode*> attractionPoints;

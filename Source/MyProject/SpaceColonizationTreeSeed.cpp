@@ -7,7 +7,7 @@
 ASpaceColonizationTreeSeed::ASpaceColonizationTreeSeed():
 NumOfAttractionPoints(2500),
 BranchLength(20),
-GrowingWithDirection(true)
+growingWithDirection(true)
 {
 	//Component Initializations
 	SeedSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
@@ -91,12 +91,12 @@ void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 	{
 		//Get a random position in radius
 		FVector pos;
-		pos.X = FMath::FRandRange(-crownRadius, crownRadius);
-		pos.Y = FMath::FRandRange(-crownRadius, crownRadius);
-		pos.Z = FMath::FRandRange(-crownRadius, crownRadius);
+		pos.X = FMath::FRandRange(-CrownRadius, CrownRadius);
+		pos.Y = FMath::FRandRange(-CrownRadius, CrownRadius);
+		pos.Z = FMath::FRandRange(-CrownRadius, CrownRadius);
 
 		//If position is in circle
-		if (sqrt((pos.X * pos.X) + (pos.Y * pos.Y) + (pos.Z * pos.Z)) <= crownRadius)
+		if (sqrt((pos.X * pos.X) + (pos.Y * pos.Y) + (pos.Z * pos.Z)) <= CrownRadius)
 		{
 			//If position is in top semi-sphere
 			if (pos.Z >= 0)
@@ -117,7 +117,7 @@ void ASpaceColonizationTreeSeed::CreateAttractionPoints()
 				//Wind offset and trunk height translation
 				FTransform windAndTrunkTF = FTransform::Identity;
 				windAndTrunkTF.AddToTranslation(GetActorLocation() + windOffset);
-				windAndTrunkTF.AddToTranslation(FVector(0, 0, trunkHeight));
+				windAndTrunkTF.AddToTranslation(FVector(0, 0, TrunkHeight));
 				attractionPointPosition = windAndTrunkTF.TransformPosition(attractionPointPosition);
 
 				//Spawn new attraction point
@@ -184,7 +184,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 	if (newTreeNode)
 	{
 		//If its growing with only direction
-		if (GrowingWithDirection)
+		if (growingWithDirection)
 		{
 			//Calculate direction to go up (for trunk)
 			newTreeNode->CalculateCurrentDirection(newNodePosition + FVector::DownVector);
@@ -193,7 +193,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 			if (newTreeNode->GetHasAttractionInfluences())
 			{
 				//Stop growing with direction
-				GrowingWithDirection = false;
+				growingWithDirection = false;
 			}
 		}
 		else
@@ -203,7 +203,7 @@ void ASpaceColonizationTreeSeed::SpawnNewNode(ATreeNode* parentNode)
 		}
 
 		//Calculate next node position
-		newTreeNode->CalculateNextTreeNodePosition(GrowingWithDirection, BranchLength);
+		newTreeNode->CalculateNextTreeNodePosition(growingWithDirection, BranchLength);
 
 		//Add to the queue
 		growingNodeQueue.Add(newTreeNode);
@@ -231,7 +231,7 @@ void ASpaceColonizationTreeSeed::CreateMesh()
 
 	//Mesh Triangle Indices
 	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, false, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, LevelOfDetail + 1, false, triangles);
 
 	//For the required nodes to render
 	for (int i = nodes.Num() - 1 - renderedNodeMeshes; i >= nodes.Num() - 1 - NodeMeshesRenderedPerFrame - renderedNodeMeshes && i >= 0; i--)
@@ -320,7 +320,7 @@ void ASpaceColonizationTreeSeed::GrowBranches(float DeltaTime)
 
 	//Mesh Triangle Indices
 	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, levelOfDetail + 1, true, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(2, LevelOfDetail + 1, true, triangles);
 
 	//Vertex and UV arrays
 	TArray<FVector> vertices;
@@ -427,7 +427,7 @@ void ASpaceColonizationTreeSeed::CreateSphereMesh(ATreeNode* node)
 
 	//Mesh Triangle Indices
 	TArray<int32> triangles;
-	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(levelOfDetail + 1, levelOfDetail + 1, true, triangles);
+	UKismetProceduralMeshLibrary::CreateGridMeshTriangles(LevelOfDetail + 1, LevelOfDetail + 1, true, triangles);
 
 	//Calculate radius of sphere
 	float radius = pow(node->GetNumOfChildren() * MeshGrowthRate, 1 / MeshGrowthRate) + 0.5;
@@ -447,22 +447,22 @@ void ASpaceColonizationTreeSeed::CreateSphereMesh(ATreeNode* node)
 		node->SetMeshSectionIndex(currentMeshSection);
 	}
 	// Create Sphere
-	for (int m = levelOfDetail + 1; m > 0; m--)
+	for (int m = LevelOfDetail + 1; m > 0; m--)
 	{
-		for (int n = 0; n < levelOfDetail + 1; n++)
+		for (int n = 0; n < LevelOfDetail + 1; n++)
 		{
 			//Calculate vertex position
 			FVector pos = node->GetActorLocation();
-			pos.X = FMath::Sin(PI * m / levelOfDetail) * FMath::Cos(2 * PI * n / levelOfDetail) * (radius);
-			pos.Y = FMath::Sin(PI * m / levelOfDetail) * FMath::Sin(2 * PI * n / levelOfDetail) * (radius);
-			pos.Z = FMath::Cos(PI * m / levelOfDetail) * (radius);
+			pos.X = FMath::Sin(PI * m / LevelOfDetail) * FMath::Cos(2 * PI * n / LevelOfDetail) * (radius);
+			pos.Y = FMath::Sin(PI * m / LevelOfDetail) * FMath::Sin(2 * PI * n / LevelOfDetail) * (radius);
+			pos.Z = FMath::Cos(PI * m / LevelOfDetail) * (radius);
 			pos = node->GetActorTransform().TransformPosition(pos);
 			pos -= GetActorLocation();
 
 			vertices.Add(pos);
 
 			//Calculate and save UV
-			uvs.Add(FVector2D(m / levelOfDetail, n / levelOfDetail));
+			uvs.Add(FVector2D(m / LevelOfDetail, n / LevelOfDetail));
 		}
 	}
 
