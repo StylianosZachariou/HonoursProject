@@ -26,7 +26,7 @@ public:
 		USphereComponent* SphereComponent;
 
 	UPROPERTY(VisibleAnywhere)
-		UCapsuleComponent* collider;
+		UCapsuleComponent* Collider;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
 //	UPROPERTY(VisibleAnywhere)

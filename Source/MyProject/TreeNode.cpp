@@ -20,8 +20,8 @@ parent(nullptr)
 	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	SetRootComponent(SceneComponent);
 
-	collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collider"));
-	collider->SetupAttachment(RootComponent);
+	Collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collider"));
+	Collider->SetupAttachment(RootComponent);
 
 	//Detection Radiuses
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));

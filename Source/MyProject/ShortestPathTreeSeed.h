@@ -21,10 +21,10 @@ class MYPROJECT_API AShortestPathTreeSeed : public ATreeSeed
 {
 	GENERATED_BODY()
 
+public:
 	//Constructor
 	AShortestPathTreeSeed();
 
-public:
 	//Attributes
 	UPROPERTY(Category = "Nodes", EditAnywhere)
 		TSubclassOf<AGuidingVectorNode> GuidingVectorNodeToSpawn;
@@ -56,7 +56,6 @@ private:
 
 	//Mesh
 	void GrowBranches(float DeltaTime);
-	void GrowTrunk(float DeltaTime);
 	void CreateMesh();
 	void CreateSphereMesh(AGuidingVectorNode* node);
 

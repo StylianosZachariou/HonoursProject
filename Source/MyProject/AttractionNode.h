@@ -21,10 +21,10 @@ public:
 		USceneComponent* SceneComponent;
 
 	UPROPERTY(VisibleAnywhere)
-		UCapsuleComponent* collider;
+		UCapsuleComponent* Collider;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
-/*	UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* StaticMeshComponent;*/
+//	UPROPERTY(VisibleAnywhere)
+//		UStaticMeshComponent* StaticMeshComponent;
 	/////////////////////////////////////////////////////////
 };

@@ -29,7 +29,7 @@ public:
 		USphereComponent* KillRange;
 
 	UPROPERTY(VisibleAnywhere)
-		UCapsuleComponent* collider;
+		UCapsuleComponent* Collider;
 
 	///////////////// DEMONSTRATION PURPOSES /////////////////
 	//	UPROPERTY(EditAnywhere)
