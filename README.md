@@ -23,4 +23,4 @@ Conclusion:
 Although there is room for improvement concerning visual detail, environmental responsiveness and scalability, this project proved the possibility of applying procedurally generated, responsive trees to video game environments without having a high impact on performance. 
 
 
-![FarAway2](https://github.com/StylianosZachariou/HonoursProject/assets/59959821/cd07c2a3-dada-44a3-b3b6-cdf77d30e2de)
+<center> <img src="https://github.com/StylianosZachariou/HonoursProject/assets/59959821/cd07c2a3-dada-44a3-b3b6-cdf77d30e2de" width="600"> </center>
